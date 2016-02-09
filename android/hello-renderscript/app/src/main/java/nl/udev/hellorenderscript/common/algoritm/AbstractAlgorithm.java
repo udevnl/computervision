@@ -1,0 +1,151 @@
+package nl.udev.hellorenderscript.common.algoritm;
+
+import android.renderscript.Allocation;
+import android.renderscript.Element;
+import android.renderscript.RenderScript;
+import android.renderscript.Type;
+import android.util.Log;
+import android.util.Size;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import nl.udev.hellorenderscript.common.algoritm.parameter.AbstractParameter;
+
+/**
+ * Base class which contains common video processing algorithm functionality.
+ *
+ * Created by ben on 9-2-16.
+ */
+public abstract class AbstractAlgorithm {
+
+    private static final String TAG = "Algorithm";
+
+    private final List<AbstractParameter> parameters = new ArrayList<>();
+    private Size videoResolution;
+    private RenderScript rs;
+
+    /**
+     * Process the new captured data and display the output in the display buffer.
+     * @param captureBufferRgba    Buffer containing the newly captured video frame
+     * @param displayBufferRgba    Buffer to visualize the output in
+     */
+    public abstract void process(Allocation captureBufferRgba, Allocation displayBufferRgba);
+
+    /**
+     * Initialize the algorithm.
+     *
+     * @param videoResolution    the resolution of the video
+     * @param rs                 the main renderscript
+     */
+    public void initialize(Size videoResolution, RenderScript rs) {
+        Log.i(TAG, "Initialize algorithm: " + toString());
+        this.videoResolution = videoResolution;
+        this.rs = rs;
+        initialize();
+    }
+
+    /**
+     * Cleanup
+     */
+    public void cleanup() {
+        Log.i(TAG, "Cleanup algorithm: " + toString());
+        unInitialize();
+    }
+
+    /**
+     * @return  The parameters of this script
+     */
+    public List<AbstractParameter> getParameters() {
+        return parameters;
+    }
+
+    @Override
+    public String toString() {
+        return getName();
+    }
+
+    // *********************************************************************************************
+    // Interface between child and this abstract class
+    // *********************************************************************************************
+
+    /**
+     * @return  the display name of the algorithm
+     */
+    protected abstract String getName();
+
+    /**
+     * Perform initialization of the algorithm.
+     * Usually this involves creating buffers and setting up and initializing renderscripts.
+     */
+    protected abstract void initialize();
+
+    /**
+     * Cleanup everything created in the initialization.
+     */
+    protected abstract void unInitialize();
+
+
+    // *********************************************************************************************
+    // Interface between this abstract class and it's child
+    // *********************************************************************************************
+
+    /**
+     * Helper method to create an 2D Allocation of the given elementType.
+     *
+     * This method assumes the 2D size is equal to the video resolution.
+     *
+     * @param elementType
+     * @return
+     */
+    protected Allocation create2d(Element elementType) {
+        return create2d(videoResolution.getWidth(), videoResolution.getHeight(), elementType);
+    }
+
+    /**
+     * Helper method to create an 2D Allocation of the given elementType.
+     *
+     * @param size
+     * @param elementType
+     * @return
+     */
+    protected Allocation create2d(Size size, Element elementType) {
+        return create2d(size.getWidth(), size.getHeight(), elementType);
+    }
+
+    /**
+     * Helper method to create an 2D Allocation of the given elementType.
+     * @param width
+     * @param height
+     * @param elementType
+     * @return
+     */
+    protected Allocation create2d(int width, int height, Element elementType) {
+        Type.Builder vectorBufferBuilder = new Type.Builder(rs, elementType);
+        vectorBufferBuilder.setX(width);
+        vectorBufferBuilder.setY(height);
+        return Allocation.createTyped(rs, vectorBufferBuilder.create(), Allocation.USAGE_SCRIPT);
+    }
+
+    /**
+     * Add a new parameter of the algorithm to the list of parameters.
+     * @param parameter
+     */
+    protected void addParameter(AbstractParameter parameter) {
+        parameters.add(parameter);
+    }
+
+    /**
+     * @return  The renderscript
+     */
+    protected RenderScript getRenderScript() {
+        return rs;
+    }
+
+    /**
+     * @return  The currently active resolution
+     */
+    protected Size getVideoResolution() {
+        return videoResolution;
+    }
+}

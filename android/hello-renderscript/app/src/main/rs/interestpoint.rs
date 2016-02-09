@@ -59,6 +59,8 @@ float2 __attribute__((kernel)) calcInterestPoints(float2 in, int32_t x, int32_t 
 // If significant, plot it
 rs_allocation interestPointsBuffer;
 rs_allocation plotImageBuffer;
+float minAngle;
+float maxAngle;
 void __attribute__((kernel)) plotInterestPoints(float2 in, int32_t x, int32_t y) {
 
         // Interest point contains the total angular deviation from the average angle
@@ -66,7 +68,7 @@ void __attribute__((kernel)) plotInterestPoints(float2 in, int32_t x, int32_t y)
         float2 interestPoint = rsGetElementAt_float2(interestPointsBuffer, x, y);
 
         // Only mark angles between 68 and 180 degrees
-        if(interestPoint.s0 > .6 && interestPoint.s0 < 1.0) {
+        if(interestPoint.s0 > minAngle && interestPoint.s0 < maxAngle) {
             uchar4 markColor = 255;
             rsSetElementAt_uchar4(plotImageBuffer, markColor, x, y);
         }

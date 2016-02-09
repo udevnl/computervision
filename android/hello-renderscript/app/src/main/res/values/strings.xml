@@ -20,4 +20,5 @@
     <string name="t_vector_gradient">Camera - gradient vector</string>
     <string name="t_main_title">Hello renderscript!</string>
     <string name="title_activity_interest_point_detection">InterestPointDetection</string>
+    <string name="t_algoritm_viewer">Algoritm viewer</string>
 </resources>

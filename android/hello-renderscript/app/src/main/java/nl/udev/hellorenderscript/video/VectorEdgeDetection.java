@@ -393,7 +393,7 @@ public class VectorEdgeDetection extends AppCompatActivity {
             rsGradientVector.set_intensityBuffer(intensityBuffer);
             rsGradientVector.forEach_calcGradientVectors(gradientVectorsBuffer);
 
-            switch (2) {
+            switch (0) {
 
                 // Show edge directions as colors
                 case 0: {
