@@ -1,0 +1,23 @@
+<resources>
+    <string name="app_name">HiRS</string>
+    <string name="title_activity_main">MainActivity</string>
+    <string name="image_description">Fractal</string>
+    <string name="title_activity_fullscreen">FullscreenActivity</string>
+    <string name="dummy_button">Dummy Button</string>
+    <string name="dummy_content">DUMMY\nCONTENT</string>
+    <string name="help_button">help</string>
+    <string name="auto_exposure_label">exposure</string>
+    <string name="even_exposure_label">even</string>
+    <string name="odd_exposure_label">odd</string>
+    <string name="camera_permission_rationale">This app will not function without camera</string>
+    <string name="ok">OK</string>
+    <string name="camera_permission_denied_explanation">Game over</string>
+    <string name="settings">Settings</string>
+    <string name="camera_no_good">No usable camera found</string>
+    <string name="t_fractal">Fractal</string>
+    <string name="t_detla_m_avg">Camera - delta moving average</string>
+    <string name="t_please_select">Please select</string>
+    <string name="t_vector_gradient">Camera - gradient vector</string>
+    <string name="t_main_title">Hello renderscript!</string>
+    <string name="title_activity_interest_point_detection">InterestPointDetection</string>
+</resources>

@@ -1,0 +1,40 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 23
+    buildToolsVersion "23.0.2"
+
+    defaultConfig {
+        applicationId "nl.udev.hellorenderscript"
+        minSdkVersion 23
+        targetSdkVersion 23
+        versionCode 1
+        versionName "1.0"
+
+        // Enable Renderscript.
+        // BEWARE that there are two ways to get access to RenderScript:
+        // 1. The native way (requires Android 4.2+)
+        // 2. Through the RenderScriptSupport library (android 2.2+)
+        // If you use the support library, you can have up to API level 18.
+        // For higher API levels, current you cannot use the support library.
+        // For details, see http://android-developers.blogspot.nl/2013/09/renderscript-in-android-support-library.html
+        // Below we are using the NATIVE way
+        // SO WE DISABLE THE SUPPORT-LIB!!!!!! (otherwise compilation will fail!)
+        renderscriptTargetApi 23
+        // renderscriptSupportModeEnabled true
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    testCompile 'junit:junit:4.12'
+    compile 'com.android.support:appcompat-v7:23.1.1'
+    compile 'com.android.support:design:23.1.1'
+    compile 'com.android.support:support-v4:23.1.1'
+}
