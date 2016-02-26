@@ -19,7 +19,7 @@
 
     <RelativeLayout
         android:orientation="horizontal"
-        android:layout_width="150dp"
+        android:layout_width="175dp"
         android:layout_height="match_parent"
         android:layout_alignParentEnd="true"
         android:id="@+id/linearLayout2"
@@ -29,7 +29,7 @@
             android:orientation="vertical"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="#000a76"
+            android:background="#c0c0ff"
             android:id="@+id/linearLayout3">
 
             <TextView
@@ -37,8 +37,7 @@
                 android:layout_height="wrap_content"
                 android:textAppearance="?android:attr/textAppearanceSmall"
                 android:text="Small Text"
-                android:id="@+id/algorithmFpsLabel"
-                android:textColor="@android:color/white" />
+                android:id="@+id/algorithmFpsLabel" />
 
             <Spinner
                 android:layout_width="wrap_content"
@@ -58,7 +57,7 @@
             android:orientation="vertical"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="#024201"
+            android:background="#f0f0f0"
             android:layout_below="@+id/linearLayout3"
             android:layout_alignParentStart="true"
             android:id="@+id/algorithmParameters"></LinearLayout>

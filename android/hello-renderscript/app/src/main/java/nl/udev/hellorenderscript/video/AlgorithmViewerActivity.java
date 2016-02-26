@@ -30,6 +30,8 @@ import nl.udev.hellorenderscript.R;
 import nl.udev.hellorenderscript.common.algoritm.AbstractAlgorithm;
 import nl.udev.hellorenderscript.common.algoritm.parameter.AbstractParameter;
 import nl.udev.hellorenderscript.common.algoritm.parameter.IntegerParameter;
+import nl.udev.hellorenderscript.common.algoritm.parameter.LimitedSettingsParameter;
+import nl.udev.hellorenderscript.common.algoritm.parameter.ParameterUser;
 import nl.udev.hellorenderscript.video.algoritms.*;
 import nl.udev.hellorenderscript.video.common.VideoCaptureListener;
 import nl.udev.hellorenderscript.video.common.VideoCaptureProcessor;
@@ -345,9 +347,18 @@ public class AlgorithmViewerActivity extends AppCompatActivity {
 
             switch (parameter.getType()) {
                 case INTEGER:
-                    final IntegerParameter integerParameter = (IntegerParameter) parameter;
-                    counter = addIntegerControls(counter, linearLayout, integerParameter);
+                    counter = addIntegerControls(
+                            counter,
+                            linearLayout,
+                            (IntegerParameter) parameter
+                    );
                     break;
+                case LIMITED_SETTINGS:
+                    counter = addSelectControls(
+                            counter,
+                            linearLayout,
+                            (LimitedSettingsParameter) parameter
+                    );
             }
         }
     }
@@ -383,6 +394,9 @@ public class AlgorithmViewerActivity extends AppCompatActivity {
         valueSetter.setMax(range);
         container.addView(valueSetter, params);
 
+        // Set the seekBar to the current value provided by the algorithm
+        valueSetter.setProgress(intParameter.getCurrentValue());
+
         valueSetter.setOnSeekBarChangeListener(
                 new SeekBar.OnSeekBarChangeListener() {
                     @Override
@@ -405,6 +419,48 @@ public class AlgorithmViewerActivity extends AppCompatActivity {
 
         // Set the label to the current value
         labelUpdateFunction.run();
+
+        return startId;
+    }
+
+    private int addSelectControls(int startId, LinearLayout container, final LimitedSettingsParameter parameter) {
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+
+        // Add a Spinner to change the value
+        Spinner valueSetter = new Spinner(this);
+        valueSetter.setId(R.id.algorithmParameters + startId++);
+
+        //noinspection unchecked, guaranteed by the parameter
+        ArrayAdapter adapter = new ArrayAdapter(
+                this,
+                android.R.layout.simple_spinner_item,
+                parameter.getPossibleValues()
+        );
+
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        valueSetter.setAdapter(adapter);
+        valueSetter.setOnItemSelectedListener(
+                new AdapterView.OnItemSelectedListener() {
+                    @Override
+                    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                        //noinspection unchecked, guaranteed by the parameter
+                        parameter.setValue(parent.getItemAtPosition(position));
+                    }
+
+                    @Override
+                    public void onNothingSelected(AdapterView<?> parent) {
+                        // No action
+                    }
+                }
+        );
+
+        container.addView(valueSetter, params);
+
+        // Set the Spinner to the current value provided by the algorithm
+        int selectedIndex = parameter.getPossibleValues().indexOf(parameter.getCurrentValue());
+        valueSetter.setSelection(selectedIndex);
 
         return startId;
     }

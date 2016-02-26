@@ -13,7 +13,9 @@ import nl.udev.hellorenderscript.video.ScriptC_utils;
 import nl.udev.hellorenderscript.video.algoritms.common.Kernels;
 
 /**
- * Algorithm to shown and detect interest points in an image.
+ * Algorithm to show and detect interest points in an image using another custom algorithm.
+ *
+ *
  *
  * Created by ben on 9-2-16.
  */
@@ -36,8 +38,10 @@ public class InterestPointDetectionAlgorithm extends AbstractAlgorithm {
     private int kernelSize;
     private int interestAreaSize;
     private float amplification;
-    private float minAngle;
-    private float maxAngle;
+    private float minEdgeSize;
+    private float binSizeRadians;
+    private float maxWeightOutOfBinFactor;
+    private float maxAngleBetweenBinsRadians;
     private boolean kernelSizeChanged;
 
 
@@ -45,13 +49,17 @@ public class InterestPointDetectionAlgorithm extends AbstractAlgorithm {
         addParameter(new IntegerParameter("Edge kernel", 1, 10, 1, new KernelSizeMonitor()));
         addParameter(new IntegerParameter("Edge amp", 1, 100, 1, new AmplificationMonitor()));
         addParameter(new IntegerParameter("InterestAreaSize", 1, 10, 5, new InterestAreaSizeMonitor()));
-        addParameter(new IntegerParameter("MinAngle", 5, 180, 30, new MinAngleMonitor()));
-        addParameter(new IntegerParameter("MaxAngle", 5, 180, 150, new MaxAngleMonitor()));
-        this.kernelSize = 3;
-        this.amplification = 2.0f;
-        this.interestAreaSize = 5;
-        this.minAngle = (float) Math.toRadians(30);
-        this.maxAngle = (float) Math.toRadians(150);
+        addParameter(new IntegerParameter("MinEdgeSize", 10, 100, 20, new MinEdgeSizeMonitor()));
+        addParameter(new IntegerParameter("BinSize", 5, 180, 150, new BinSizeMonitor()));
+        addParameter(new IntegerParameter("MaxNonBinFactor", 1, 100, 10, new MaxOutsideBinFactorMonitor()));
+        addParameter(new IntegerParameter("MaxBinsAngle", 0, 360, 120, new MaxBinsAngleMonitor()));
+        this.kernelSize = 5;
+        this.amplification = 7.0f;
+        this.interestAreaSize = 1;
+        this.minEdgeSize = 0.5f;
+        this.maxWeightOutOfBinFactor = 0.1f;
+        this.binSizeRadians = (float) Math.toRadians(27);
+        this.maxAngleBetweenBinsRadians = (float) Math.toRadians(120);
     }
 
     @Override
@@ -76,14 +84,15 @@ public class InterestPointDetectionAlgorithm extends AbstractAlgorithm {
         // Calculate the amount of edge in a certain area
         rsInterestPoint.set_areaSize(interestAreaSize);
         rsInterestPoint.set_polarEdgeBuffer(imageVectorsPolarBuffer);
+        rsInterestPoint.set_binSizeRadians(binSizeRadians);
+        rsInterestPoint.set_minEdgeSize(minEdgeSize);
+        rsInterestPoint.set_maxOutOfBinsFactor(maxWeightOutOfBinFactor);
+        rsInterestPoint.set_maxAngleBetweenBinsRadians(maxAngleBetweenBinsRadians);
         rsInterestPoint.forEach_calcInterestPoints(imageVectorsPolarBuffer, polarBuffer1);
 
         // Plot the interest points
-        rsInterestPoint.set_minAngle(minAngle / 2.0f);
-        rsInterestPoint.set_maxAngle(maxAngle / 2.0f);
-        rsInterestPoint.set_interestPointsBuffer(polarBuffer1);
         rsInterestPoint.set_plotImageBuffer(displayBufferRgba);
-        rsInterestPoint.forEach_plotInterestPoints(imageVectorsPolarBuffer);
+        rsInterestPoint.forEach_plotInterestPoints(polarBuffer1);
     }
 
     @Override
@@ -191,29 +200,55 @@ public class InterestPointDetectionAlgorithm extends AbstractAlgorithm {
         }
     }
 
-    private class MinAngleMonitor implements ParameterUser<Integer> {
+    private class MinEdgeSizeMonitor implements ParameterUser<Integer> {
 
         @Override
         public String displayValue(Integer value) {
-            return String.format("%3.0f deg", Math.toDegrees(minAngle));
+            return String.format("%1.2f", minEdgeSize);
         }
 
         @Override
         public void handleValueChanged(Integer newValue) {
-            minAngle = (float)Math.toRadians(newValue);
+            minEdgeSize = (float) newValue / 100.0f;
         }
     }
 
-    private class MaxAngleMonitor implements ParameterUser<Integer> {
+    private class BinSizeMonitor implements ParameterUser<Integer> {
 
         @Override
         public String displayValue(Integer value) {
-            return String.format("%3.0f deg", Math.toDegrees(maxAngle));
+            return String.format("%3.1f deg", Math.toDegrees(binSizeRadians));
         }
 
         @Override
         public void handleValueChanged(Integer newValue) {
-            maxAngle = (float)Math.toRadians(newValue);
+            binSizeRadians = (float)Math.toRadians(newValue);
+        }
+    }
+
+    private class MaxOutsideBinFactorMonitor implements ParameterUser<Integer> {
+
+        @Override
+        public String displayValue(Integer value) {
+            return String.format("%1.1f", maxWeightOutOfBinFactor);
+        }
+
+        @Override
+        public void handleValueChanged(Integer newValue) {
+            maxWeightOutOfBinFactor = (float) newValue / 100.0f;
+        }
+    }
+
+    private class MaxBinsAngleMonitor implements ParameterUser<Integer> {
+
+        @Override
+        public String displayValue(Integer value) {
+            return String.format("%3.1f deg", Math.toDegrees(maxAngleBetweenBinsRadians));
+        }
+
+        @Override
+        public void handleValueChanged(Integer newValue) {
+            maxAngleBetweenBinsRadians = (float)Math.toRadians(newValue);
         }
     }
 
@@ -236,5 +271,4 @@ public class InterestPointDetectionAlgorithm extends AbstractAlgorithm {
             kernelSizeChanged = false;
         }
     }
-
 }

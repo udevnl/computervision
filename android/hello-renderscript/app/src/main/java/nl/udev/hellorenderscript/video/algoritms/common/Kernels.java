@@ -115,4 +115,35 @@ public class Kernels {
         return totalWeight;
     }
 
+
+    /**
+     * Calculates the total of all weight values in the given kernel but takes
+     * into account that the kernel will be applied only along the center X and Y axis.
+     */
+    public static float calculateTotalKernelWeight2N(float[] kernelBuffer) {
+
+        int kernelEntries = kernelBuffer.length / 4;
+
+        // This should be an odd number, 1, 3, 5, etc
+        int kernelWidth = (int) Math.round(Math.sqrt(kernelEntries));
+        if(kernelWidth%2 != 1) {
+            throw new IllegalArgumentException("Unexpected kernel width: " + kernelWidth);
+        }
+
+        int widthCenter = kernelWidth / 2;
+
+        float totalWeight = 0;
+
+        for(int d = 0; d < kernelWidth; d++) {
+
+            // Add all X values along the center of the Y axis
+            totalWeight += kernelBuffer[(d + (widthCenter * kernelWidth)) * 4 + 2];
+
+            // Add all Y values along the center of the X axis
+            totalWeight += kernelBuffer[(widthCenter + (d * kernelWidth)) * 4 + 2];
+        }
+
+        return totalWeight;
+    }
+
 }

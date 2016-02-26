@@ -6,5 +6,6 @@ package nl.udev.hellorenderscript.common.algoritm.parameter;
  * Created by ben on 9-2-16.
  */
 public enum ParameterType {
-    INTEGER
+    INTEGER,
+    LIMITED_SETTINGS
 }

@@ -45,6 +45,10 @@ public class IntegerParameter extends AbstractParameter {
         return maxValue;
     }
 
+    public int getCurrentValue() {
+        return currentValue;
+    }
+
     @Override
     public String getDisplayValue() {
         return this.user.displayValue(this.currentValue);

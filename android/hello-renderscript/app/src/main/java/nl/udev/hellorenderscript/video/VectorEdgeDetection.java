@@ -423,30 +423,6 @@ public class VectorEdgeDetection extends AppCompatActivity {
                     rsPlotPolar2d.forEach_plotOffset(imageVectorsPolarBuffer);
                     break;
                 }
-
-                // Show interest points
-                case 2: {
-                    // Convert gradient vectors to polar vectors
-                    rsUtilsScript.forEach_toPolar2D(gradientVectorsBuffer, imageVectorsPolarBuffer);
-
-                    // Plot angles as colors
-                    rsPlotPolar2d.set_plotColoured_angleColors(angleColorsBuffer);
-                    rsPlotPolar2d.forEach_plotColoured(imageVectorsPolarBuffer, displayBuffer);
-
-                    // Global settings
-                    rsInterestPoint.set_sourceWidth(videoSize.getWidth());
-                    rsInterestPoint.set_sourceHeight(videoSize.getHeight());
-
-                    // Calculate the amount of edge in a certain area
-                    rsInterestPoint.set_areaSize(5);
-                    rsInterestPoint.set_polarEdgeBuffer(imageVectorsPolarBuffer);
-                    rsInterestPoint.forEach_calcInterestPoints(imageVectorsPolarBuffer, polarBuffer1);
-
-                    // Plot the interest points
-                    rsInterestPoint.set_interestPointsBuffer(polarBuffer1);
-                    rsInterestPoint.set_plotImageBuffer(displayBuffer);
-                    rsInterestPoint.forEach_plotInterestPoints(imageVectorsPolarBuffer);
-                }
             }
 
 
