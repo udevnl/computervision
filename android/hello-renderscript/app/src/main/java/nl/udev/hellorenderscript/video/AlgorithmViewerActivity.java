@@ -84,6 +84,7 @@ public class AlgorithmViewerActivity extends AppCompatActivity {
         algorithmList.add(new VectorEdgeDetectionAlgorithm());
         algorithmList.add(new InterestPointDetectionAlgorithm());
         algorithmList.add(new ImagePyramidAlgorithm());
+        algorithmList.add(new TemporalPyramidAlgorithm());
 
         // Populate HMI with supported algorithms / resolutions
         initializeCameraResolutionSelection();
