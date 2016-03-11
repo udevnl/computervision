@@ -106,7 +106,17 @@ float __attribute__((kernel)) expandStep2(int32_t x, int32_t y) {
 rs_allocation laplacianLowerLevel; // float
 
 float __attribute__((kernel)) laplacian(float in, int32_t x, int32_t y) {
-    return rsGetElementAt_float(laplacianLowerLevel, x, y) - in;
+    return in - rsGetElementAt_float(laplacianLowerLevel, x, y);
+}
+
+// ============================================================================================
+// Collapsing Laplacian pyramid levels
+// ============================================================================================
+
+rs_allocation collapseLevel; // float
+
+float __attribute__((kernel)) collapse(float in, int32_t x, int32_t y) {
+    return rsGetElementAt_float(collapseLevel, x, y) + in;
 }
 
 // ============================================================================================
@@ -123,8 +133,24 @@ uchar4 __attribute__((kernel)) plotPyramidLevel(int32_t x, int32_t y) {
 
     int xp = x * pyramidWidth / plotWidth;
     int yp = y * pyramidHeight / plotHeight;
+    int value = 255 * rsGetElementAt_float(pyramidImage, xp, yp);
 
-    int value = (int) 128 + (128 * rsGetElementAt_float(pyramidImage, xp, yp));
+    return max(0, min(255, value));
+}
 
-    return min(255, value);
+uchar4 __attribute__((kernel)) plotPyramidLevelLaplacian(int32_t x, int32_t y) {
+
+    int xp = x * pyramidWidth / plotWidth;
+    int yp = y * pyramidHeight / plotHeight;
+    int value = (int) (512 * rsGetElementAt_float(pyramidImage, xp, yp));
+    uchar4 color = 0;
+
+    if(value < 0) {
+        color.r = min(255, -value);
+    } else {
+        color.g = min(255, value);
+    }
+
+    color.a = 255;
+    return color;
 }

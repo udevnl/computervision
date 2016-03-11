@@ -2,48 +2,55 @@ package nl.udev.hellorenderscript.video.algoritms;
 
 import android.renderscript.Allocation;
 import android.renderscript.Element;
-import android.util.Log;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
 
 import nl.udev.hellorenderscript.common.algoritm.AbstractAlgorithm;
 import nl.udev.hellorenderscript.common.algoritm.parameter.IntegerParameter;
 import nl.udev.hellorenderscript.common.algoritm.parameter.LimitedSettingsParameter;
 import nl.udev.hellorenderscript.common.algoritm.parameter.ParameterUser;
-import nl.udev.hellorenderscript.video.ScriptC_pyramid;
 import nl.udev.hellorenderscript.video.ScriptC_utils;
+import nl.udev.hellorenderscript.video.algoritms.common.ImagePyramid;
 
 /**
+ * Basic algorithm to play with image pyramid.
+ *
  * Created by ben on 26-2-16.
  */
 public class ImagePyramidAlgorithm extends AbstractAlgorithm {
 
-    private static final String TAG = "ImagePyramid";
-    private ScriptC_pyramid rsPyramid;
-    private ScriptC_utils rsUtils;
+    private static final String TAG = "PyramidAlg";
 
+    private static final int MAX_PIRAMID_LEVELS = 10;
+
+    private ScriptC_utils rsUtils;
+    private ImagePyramid pyramid;
     private Allocation intensityBuffer;
     private Allocation scratchPadBuffer;
 
-    // Dynamically created / changed
-    private final List<PyramidLevel> pyramidLevels = new ArrayList<>();
-
+    // Parameters
     private int pyramidCount;
     private boolean pyramidCountChanged;
     private int viewLevel;
+    private float[] levelAdjustments = new float[MAX_PIRAMID_LEVELS];
     private ViewType viewType;
 
     private enum ViewType {
         LEVEL,
         LEVEL_EXPANDED,
-        LAPLACIAN
+        LAPLACIAN,
+        LAPLACIAN_COLLAPSED
     }
 
     public ImagePyramidAlgorithm() {
-        addParameter(new IntegerParameter("Pyramid count", 1, 10, 3, new PyramidCountMonitor()));
-        addParameter(new IntegerParameter("ViewLevel", 1, 10, 1, new ViewLevelMonitor()));
+        addParameter(new IntegerParameter("Pyramid count", 1, MAX_PIRAMID_LEVELS, 3, new PyramidCountMonitor()));
+        addParameter(new IntegerParameter("ViewLevel", 0, MAX_PIRAMID_LEVELS, 1, new ViewLevelMonitor()));
         addParameter(new LimitedSettingsParameter<>("ViewType", ViewType.values(), ViewType.LAPLACIAN, new ViewTypeMonitor()));
+
+        Arrays.fill(levelAdjustments, 1.0f);
+        for(int i = 0; i < MAX_PIRAMID_LEVELS; i++) {
+            addParameter(new IntegerParameter("L" + i + " adjust", 0, 110, 60, new LevelAdjustMonitor(i)));
+        }
 
         this.pyramidCount = 3;
         this.viewLevel = 1;
@@ -63,9 +70,15 @@ public class ImagePyramidAlgorithm extends AbstractAlgorithm {
 
         // Create scriptlets
         rsUtils = new ScriptC_utils(getRenderScript());
-        rsPyramid = new ScriptC_pyramid(getRenderScript());
 
-        pyramidCountChanged = true;
+        pyramid = new ImagePyramid(
+                getRenderScript(),
+                getVideoResolution().getWidth(),
+                getVideoResolution().getHeight(),
+                pyramidCount
+        );
+
+        pyramidCountChanged = false;
     }
 
     @Override
@@ -73,15 +86,14 @@ public class ImagePyramidAlgorithm extends AbstractAlgorithm {
 
         // Destroy scriptlets
         rsUtils.destroy();
-        rsPyramid.destroy();
 
         // Destroy buffers
         intensityBuffer.destroy();
         scratchPadBuffer.destroy();
-        destroyPyramid();
+        pyramid.destroy();
 
         rsUtils = null;
-        rsPyramid = null;
+        pyramid = null;
         intensityBuffer = null;
         scratchPadBuffer = null;
     }
@@ -90,79 +102,64 @@ public class ImagePyramidAlgorithm extends AbstractAlgorithm {
     public void process(Allocation captureBufferRgba, Allocation displayBufferRgba) {
 
         // Support synchronously changing the pyramid size
-        updatePyramidStructureIfChanged();
+        if(pyramidCountChanged) {
+            pyramid.resizePyramid(
+                    getVideoResolution().getWidth(),
+                    getVideoResolution().getHeight(),
+                    pyramidCount
+            );
+            pyramidCountChanged = false;
+        }
 
         // Convert RGB image to intensity (black/white) image
         rsUtils.forEach_calcGreyscaleIntensity(captureBufferRgba, intensityBuffer);
 
-        // Calculate all pyramids, starting at the top
-        rsPyramid.set_compressSource(intensityBuffer);
-        for(int level = 1; level < pyramidLevels.size(); level++) {
-            PyramidLevel pyramidLevel = pyramidLevels.get(level);
+        pyramid.calculate(intensityBuffer);
 
-            // Calculate the pyramid level
-            rsPyramid.set_compressTargetWidth(pyramidLevel.width);
-            rsPyramid.set_compressTargetHeight(pyramidLevel.height);
-            rsPyramid.forEach_compressStep1(pyramidLevel.scratchBuffer);
-            rsPyramid.set_compressSource(pyramidLevel.scratchBuffer);
-            rsPyramid.forEach_compressStep2(pyramidLevel.levelGaussianBuffer);
-
-            // Calculate the expansion of the level
-            rsPyramid.set_expandTargetWidth(pyramidLevel.width * 2);
-            rsPyramid.set_expandTargetHeight(pyramidLevel.height * 2);
-            rsPyramid.set_expandSource(pyramidLevel.levelGaussianBuffer);
-            rsPyramid.forEach_expandStep1(pyramidLevel.scratchBuffer);
-            rsPyramid.set_expandSource(pyramidLevel.scratchBuffer);
-            rsPyramid.forEach_expandStep2(pyramidLevel.expandedBuffer);
-
-            // Prepare for the next level (if any)
-            rsPyramid.set_compressSource(pyramidLevel.levelGaussianBuffer);
+        // Do some magic to the individual levels...
+        for(int level = 0; level < pyramid.getActualLevelCount(); level++) {
+            // Adjust the intensity of the laplacian of each level
+            ImagePyramid.Level pyramidLevel = pyramid.getLevel(level);
+            rsUtils.set_multiplyFactor(levelAdjustments[level]);
+            rsUtils.forEach_multiply(
+                    pyramidLevel.getLevelLaplacianBuffer(),
+                    pyramidLevel.getLevelLaplacianBuffer()
+            );
         }
 
-        // Calculate the Laplacians...
+        if(pyramid.getActualLevelCount() > viewLevel) {
 
-        // For the lowest level this is simply the gaussian buffer
-        int lowestLevelIndex = pyramidLevels.size() - 1;
-        PyramidLevel lowestLevel = pyramidLevels.get(lowestLevelIndex);
-        lowestLevel.levelLaplacianBuffer.copyFrom(lowestLevel.levelGaussianBuffer);
-
-        // For all other levels it stacks, working from smallest to biggest
-        for(int level = lowestLevelIndex - 1; level >= 0; level--) {
-            PyramidLevel targetLevel = pyramidLevels.get(level);
-            PyramidLevel smallerLevel = pyramidLevels.get(level + 1);
-            rsPyramid.set_laplacianLowerLevel(smallerLevel.expandedBuffer);
-            rsPyramid.forEach_laplacian(targetLevel.levelGaussianBuffer, targetLevel.levelLaplacianBuffer);
-        }
-
-        if(pyramidLevels.size() > viewLevel) {
-
-            PyramidLevel plotLevel = pyramidLevels.get(viewLevel);
-
-            rsPyramid.set_plotWidth(getVideoResolution().getWidth());
-            rsPyramid.set_plotHeight(getVideoResolution().getHeight());
-
+            ImagePyramid.PlotType plotType;
             switch (viewType) {
                 case LAPLACIAN:
-                    rsPyramid.set_pyramidImage(plotLevel.levelLaplacianBuffer);
-                    rsPyramid.set_pyramidWidth(plotLevel.width);
-                    rsPyramid.set_pyramidHeight(plotLevel.height);
-                    break;
-                case LEVEL:
-                    rsPyramid.set_pyramidImage(plotLevel.levelGaussianBuffer);
-                    rsPyramid.set_pyramidWidth(plotLevel.width);
-                    rsPyramid.set_pyramidHeight(plotLevel.height);
+                    plotType = ImagePyramid.PlotType.LAPLACIAN;
                     break;
                 case LEVEL_EXPANDED:
-                    rsPyramid.set_pyramidImage(plotLevel.expandedBuffer);
-                    rsPyramid.set_pyramidWidth(plotLevel.width * 2);
-                    rsPyramid.set_pyramidHeight(plotLevel.height * 2);
+                    plotType = ImagePyramid.PlotType.LEVEL_EXPANDED;
+                    break;
+                case LAPLACIAN_COLLAPSED:
+                    pyramid.collapseLaplacian();
+                    plotType = ImagePyramid.PlotType.LEVEL;
+                    break;
+                default: // fall through
+                case LEVEL:
+                    plotType = ImagePyramid.PlotType.LEVEL;
                     break;
             }
 
-            rsPyramid.forEach_plotPyramidLevel(displayBufferRgba);
+            pyramid.plotLevel(
+                    viewLevel,
+                    plotType,
+                    displayBufferRgba,
+                    getVideoResolution().getWidth(),
+                    getVideoResolution().getHeight()
+            );
         }
     }
 
+    //--------------------------------------------------------------------------------------------
+    //region Parameter monitors
+    //--------------------------------------------------------------------------------------------
     private class PyramidCountMonitor implements ParameterUser<Integer> {
 
         @Override
@@ -202,103 +199,26 @@ public class ImagePyramidAlgorithm extends AbstractAlgorithm {
             viewType = newValue;
         }
     }
-    private void updatePyramidStructureIfChanged() {
 
-        if(pyramidCountChanged) {
-
-            destroyPyramid();
-            createPyramid(pyramidCount);
-
-            pyramidCountChanged = false;
-        }
-    }
-
-    private void createPyramid(int pyramidCount) {
-        // Try to build a pyramid with the given number of levels.
-        // Note that this will only succeed if the resolution divides in whole numbers all the way.
-
-        int width = getVideoResolution().getWidth();
-        int height = getVideoResolution().getHeight();
-
-        // Insert level 0...
-        pyramidLevels.add(
-                new PyramidLevel(
-                        0,
-                        width,
-                        height,
-                        intensityBuffer,
-                        create2d(width, height, Element.F32(getRenderScript())),
-                        null,
-                        null
-                )
-        );
-
-        int levels = 0;
-        for(int level = 1; level <= pyramidCount; level++) {
-            if(width%2 == 0 && height %2 == 0) {
-                width /= 2;
-                height /= 2;
-                pyramidLevels.add(
-                        new PyramidLevel(
-                                level,
-                                width,
-                                height,
-                                create2d(width, height, Element.F32(getRenderScript())),
-                                create2d(width, height, Element.F32(getRenderScript())),
-                                create2d(width * 2, height * 2, Element.F32(getRenderScript())),
-                                create2d(width, height * 2, Element.F32(getRenderScript()))
-                        )
-                );
-                Log.d(TAG, "Created level " + level + ", size " + width + "x" + height + ".");
-                levels++;
-            } else {
-                // Unable to create all pyramids
-                Log.w(TAG, "Cannot finish pyramid at level " + level + ", size now " + width + "x" + height + ".");
-                break;
-            }
-        }
-
-        this.pyramidCount = levels;
-    }
-
-    private void destroyPyramid() {
-        for(PyramidLevel level : pyramidLevels) {
-            // Only destroy the buffers of the sub-levels as level 0 is special
-            if(level.level == 0) {
-                level.levelLaplacianBuffer.destroy();
-            } else {
-                level.levelGaussianBuffer.destroy();
-                level.levelLaplacianBuffer.destroy();
-                level.expandedBuffer.destroy();
-                level.scratchBuffer.destroy();
-            }
-        }
-        pyramidLevels.clear();
-    }
-
-    private static class PyramidLevel {
+    private class LevelAdjustMonitor implements ParameterUser<Integer> {
 
         final int level;
-        final int width;
-        final int height;
-        final Allocation levelGaussianBuffer;
-        final Allocation levelLaplacianBuffer;
-        final Allocation expandedBuffer;
-        final Allocation scratchBuffer;
 
-        PyramidLevel(int level,
-                     int width,
-                     int height,
-                     Allocation levelGaussianBuffer,
-                     Allocation levelLaplacianBuffer, Allocation expandedBuffer,
-                     Allocation scratchBuffer) {
+        LevelAdjustMonitor(int level) {
             this.level = level;
-            this.width = width;
-            this.height = height;
-            this.levelGaussianBuffer = levelGaussianBuffer;
-            this.levelLaplacianBuffer = levelLaplacianBuffer;
-            this.expandedBuffer = expandedBuffer;
-            this.scratchBuffer = scratchBuffer;
+        }
+
+        @Override
+        public String displayValue(Integer value) {
+            return String.format("%2.2f", levelAdjustments[level]);
+        }
+
+        @Override
+        public void handleValueChanged(Integer newValue) {
+            levelAdjustments[level] = (newValue - 50) / 10.0f;
         }
     }
+    //--------------------------------------------------------------------------------------------
+    //endregion
+    //--------------------------------------------------------------------------------------------
 }

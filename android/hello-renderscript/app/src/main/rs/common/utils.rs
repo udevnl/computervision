@@ -29,3 +29,13 @@ float2 __attribute__((kernel)) toPolar2D(float2 in, uint32_t x, uint32_t y) {
     outVector.s1 = length(in);
     return outVector;
 }
+
+// ------------------------------------------------------------------------------------------------
+// Multiply a buffer with a constant
+// ------------------------------------------------------------------------------------------------
+
+float multiplyFactor;
+
+float __attribute__((kernel)) multiply(float in, uint32_t x, uint32_t y) {
+    return in * multiplyFactor;
+}
