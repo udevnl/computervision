@@ -47,7 +47,6 @@ import java.util.List;
 
 import nl.udev.hellorenderscript.BuildConfig;
 import nl.udev.hellorenderscript.R;
-import nl.udev.hellorenderscript.common.ColorMapRS;
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
@@ -67,7 +66,6 @@ public class VideoActivity extends AppCompatActivity {
     private List<Allocation> captureMovingAverageBuffers;
     private ScriptC_video videoScript;
     private ScriptIntrinsicYuvToRGB yuvToRgbScript;
-    private ColorMapRS colorMapRS;
 
     private Bitmap mBitmap;
     private int mWidth;
@@ -157,12 +155,6 @@ public class VideoActivity extends AppCompatActivity {
 //        mJuliaScript.set_height(mHeight / FACTOR);
 //        mJuliaScript.set_width(mWidth / FACTOR);
 //        mJuliaScript.set_precision(128);
-
-        colorMapRS = new ColorMapRS(mRS);
-        colorMapRS.addLinearGradient(0, 64, 0, 0, 0, 0, 0, 255);
-        colorMapRS.addLinearGradient(64, 128, 0, 0, 0, 255, 255, 255);
-        colorMapRS.addLinearGradient(128, 256, 0, 0, 255, 255, 255, 255);
-        colorMapRS.setColors();
 
         yuvToRgbScript = ScriptIntrinsicYuvToRGB.create(mRS, Element.RGBA_8888(mRS));
         videoScript = new ScriptC_video(mRS);

@@ -3,14 +3,14 @@ package nl.udev.hellorenderscript.video.algoritms;
 import android.renderscript.Allocation;
 import android.renderscript.Element;
 
-import nl.udev.hellorenderscript.common.ColormapPolar2dRS;
 import nl.udev.hellorenderscript.common.algoritm.AbstractAlgorithm;
 import nl.udev.hellorenderscript.common.algoritm.parameter.IntegerParameter;
 import nl.udev.hellorenderscript.common.algoritm.parameter.LimitedSettingsParameter;
 import nl.udev.hellorenderscript.common.algoritm.parameter.ParameterUser;
-import nl.udev.hellorenderscript.video.ScriptC_gradientvector;
 import nl.udev.hellorenderscript.video.ScriptC_utils;
-import nl.udev.hellorenderscript.video.algoritms.common.Kernels;
+import nl.udev.hellorenderscript.video.algoritms.common.EdgeDetection;
+import nl.udev.hellorenderscript.video.algoritms.common.EdgeDetection.KernelMode;
+import nl.udev.hellorenderscript.video.algoritms.common.Plotting;
 
 /**
  * Algorithm that performs edge gradient detection using a new method I thought of:
@@ -51,32 +51,21 @@ import nl.udev.hellorenderscript.video.algoritms.common.Kernels;
 public class VectorEdgeDetectionAlgorithm extends AbstractAlgorithm {
 
     private static final String TAG = "VectorEdgeAlg";
-    private ScriptC_gradientvector rsGradientVector;
+
+    private EdgeDetection edgeDetection;
+    private Plotting plotting;
+
     private ScriptC_utils rsUtils;
-
-    private ColormapPolar2dRS colormapPolar2dRS;
-
     private Allocation intensityBuffer;
-    private Allocation gradientVectorsBuffer;
-    private Allocation imageVectorsPolarBuffer;
-
-    // Dynamically created / changed
-    private Allocation kernelVectorsBuffer;
 
     private int kernelSize;
     private float amplification;
     private KernelMode mode;
-    private boolean kernelSizeChanged;
-
-    private enum KernelMode {
-        FULL_2D,
-        XY_SEPARABLE_2D
-    }
 
     public VectorEdgeDetectionAlgorithm() {
         addParameter(new IntegerParameter("Kernel size", 1, 10, 1, new KernelSizeMonitor()));
         addParameter(new IntegerParameter("Amplification", 1, 100, 1, new AmplificationMonitor()));
-        addParameter(new LimitedSettingsParameter<>("Mode", KernelMode.values(), KernelMode.FULL_2D, new ModeMonitor()));
+        addParameter(new LimitedSettingsParameter<>("KernelMode", KernelMode.values(), KernelMode.FULL_2D, new ModeMonitor()));
         this.kernelSize = 3;
         this.amplification = 2.0f;
         this.mode = KernelMode.FULL_2D;
@@ -84,87 +73,58 @@ public class VectorEdgeDetectionAlgorithm extends AbstractAlgorithm {
 
     @Override
     protected String getName() {
-        return "GradientVector edge detection";
+        return TAG;
     }
 
     @Override
     protected void initialize() {
+
+        edgeDetection = new EdgeDetection(
+                getRenderScript(),
+                getVideoResolution().getWidth(),
+                getVideoResolution().getHeight(),
+                kernelSize
+        );
+
+        plotting = new Plotting(getRenderScript());
+
         // Create buffers
         intensityBuffer = create2d(Element.F32(getRenderScript()));
-        gradientVectorsBuffer = create2d(Element.F32_2(getRenderScript()));
-        imageVectorsPolarBuffer = create2d(Element.F32_2(getRenderScript()));
 
         // Create scriptlets
         rsUtils = new ScriptC_utils(getRenderScript());
-        rsGradientVector = new ScriptC_gradientvector(getRenderScript());
-
-        // Initialize scriptlets
-        rsGradientVector.set_sourceWidth(getVideoResolution().getWidth());
-        rsGradientVector.set_sourceHeight(getVideoResolution().getHeight());
-        rsGradientVector.set_intensityBuffer(intensityBuffer);
-
-        colormapPolar2dRS = new ColormapPolar2dRS
-                .Builder(getRenderScript())
-                .addLinearGradient(0, 90,       1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f) // Red -> Yellow
-                .addLinearGradient(90, 180,     1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f) // Yellow -> Green
-                .addLinearGradient(180, 270,    0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f) // Green -> Cyan
-                .addLinearGradient(270, 360,    0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f) // Cyan -> Red
-                .build();
-
-        kernelSizeChanged = true;
     }
 
     @Override
     protected void unInitialize() {
 
+        edgeDetection.destroy();
+        plotting.destroy();
+
         // Destroy scriptlets
         rsUtils.destroy();
-        rsGradientVector.destroy();
-        colormapPolar2dRS.cleanup();
 
         // Destroy buffers
         intensityBuffer.destroy();
-        gradientVectorsBuffer.destroy();
-        imageVectorsPolarBuffer.destroy();
-        if(kernelVectorsBuffer != null) {
-            kernelVectorsBuffer.destroy();
-        }
 
         rsUtils = null;
-        rsGradientVector = null;
-        colormapPolar2dRS = null;
         intensityBuffer = null;
-        gradientVectorsBuffer = null;
-        imageVectorsPolarBuffer = null;
-        kernelVectorsBuffer = null;
     }
 
     @Override
     public void process(Allocation captureBufferRgba, Allocation displayBufferRgba) {
 
-        // Support synchronously changing the kernel size
-        updateKernelSizeIfChanged();
-
         // Convert RGB image to intensity (black/white) image
         rsUtils.forEach_calcGreyscaleIntensity(captureBufferRgba, intensityBuffer);
 
         // Calculate the gradients on the intensity buffer
-        rsGradientVector.set_scale(amplification);
-
-        switch (mode) {
-            case FULL_2D:
-                rsGradientVector.forEach_calcGradientVectors(gradientVectorsBuffer);
-                break;
-            case XY_SEPARABLE_2D:
-                rsGradientVector.forEach_calcGradientVectorsXYSeparable(gradientVectorsBuffer);
-                break;
-        }
-
-        // Convert gradient vectors to polar vectors
-        rsUtils.forEach_toPolar2D(gradientVectorsBuffer, imageVectorsPolarBuffer);
+        edgeDetection.setAmplification(amplification);
+        edgeDetection.setKernelMode(mode);
+        edgeDetection.setKernelSize(kernelSize);
+        Allocation polarVectors = edgeDetection.calcEdgePolarVectors(intensityBuffer);
 
         // Plot polar vectors
-        colormapPolar2dRS.plotVectorAngles(imageVectorsPolarBuffer, displayBufferRgba);
+        plotting.plotColormapPolar2d(polarVectors, displayBufferRgba);
     }
 
     private class KernelSizeMonitor implements ParameterUser<Integer> {
@@ -177,7 +137,6 @@ public class VectorEdgeDetectionAlgorithm extends AbstractAlgorithm {
         @Override
         public void handleValueChanged(Integer newValue) {
             kernelSize = 1 + (newValue - 1) * 2;
-            kernelSizeChanged = true;
         }
     }
 
@@ -204,27 +163,6 @@ public class VectorEdgeDetectionAlgorithm extends AbstractAlgorithm {
         @Override
         public void handleValueChanged(KernelMode newValue) {
             mode = newValue;
-        }
-    }
-
-    private void updateKernelSizeIfChanged() {
-
-        if(kernelSizeChanged) {
-            if(kernelVectorsBuffer != null) {
-                kernelVectorsBuffer.destroy();
-                kernelVectorsBuffer = null;
-            }
-
-            kernelVectorsBuffer = create2d(kernelSize, kernelSize, Element.F32_4(getRenderScript()));
-            float kernelBuffer[] = Kernels.createWeightedAngularVectorKernel(kernelSize);
-            kernelVectorsBuffer.copyFrom(kernelBuffer);
-
-            rsGradientVector.set_kernelBuffer(kernelVectorsBuffer);
-            rsGradientVector.set_kernelSquareRadius((kernelSize - 1) / 2);
-            rsGradientVector.set_totalKernelWeight(Kernels.calculateTotalKernelWeight(kernelBuffer));
-            rsGradientVector.set_totalKernelWeight2N(Kernels.calculateTotalKernelWeight2N(kernelBuffer));
-
-            kernelSizeChanged = false;
         }
     }
 }

@@ -20,6 +20,13 @@ float __attribute__((kernel)) calcGreyscaleIntensity(uchar4 in, uint32_t x, uint
 }
 
 // ------------------------------------------------------------------------------------------------
+// Convert float intensity (0.0 - 1.0) to uchar RBG
+// ------------------------------------------------------------------------------------------------
+uchar4 __attribute__((kernel)) calcRgbaIntensity(float in, uint32_t x, uint32_t y) {
+    return (int) fmax(0.0f, fmin(255.0f, in * 255.0f));
+}
+
+// ------------------------------------------------------------------------------------------------
 // Convert xy vectors to polar vectors
 // ------------------------------------------------------------------------------------------------
 float2 __attribute__((kernel)) toPolar2D(float2 in, uint32_t x, uint32_t y) {
@@ -38,4 +45,16 @@ float multiplyFactor;
 
 float __attribute__((kernel)) multiply(float in, uint32_t x, uint32_t y) {
     return in * multiplyFactor;
+}
+
+// ------------------------------------------------------------------------------------------------
+// Calculate the magnitude of vectors
+// ------------------------------------------------------------------------------------------------
+
+float __attribute__((kernel)) magnitude2D(float2 in, uint32_t x, uint32_t y) {
+    return length(in);
+}
+
+float __attribute__((kernel)) magnitude3D(float3 in, uint32_t x, uint32_t y) {
+    return length(in);
 }

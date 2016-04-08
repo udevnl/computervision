@@ -93,7 +93,7 @@ public class Kernels {
             bufferAsString.append("\n");
         }
 
-        // Log.i("Kernels", "Created kernel buffer:\n" + bufferAsString.toString());
+        Log.i("Kernels", "Created kernel buffer:\n" + bufferAsString.toString());
 
         return kernelBuffer;
     }

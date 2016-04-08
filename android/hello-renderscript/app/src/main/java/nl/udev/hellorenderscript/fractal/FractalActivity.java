@@ -2,13 +2,13 @@ package nl.udev.hellorenderscript.fractal;
 
 import android.graphics.Bitmap;
 import android.graphics.Point;
+import android.os.Bundle;
 import android.renderscript.Allocation;
 import android.renderscript.Element;
 import android.renderscript.RenderScript;
 import android.renderscript.Type;
 import android.support.v4.view.MotionEventCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.util.Log;
 import android.view.Display;
 import android.view.MotionEvent;
@@ -18,7 +18,7 @@ import android.widget.ImageView;
 
 import nl.udev.hellorenderscript.R;
 import nl.udev.hellorenderscript.ScriptC_julia;
-import nl.udev.hellorenderscript.common.ColorMapRS;
+import nl.udev.hellorenderscript.video.algoritms.common.Plotting;
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
@@ -34,7 +34,8 @@ public class FractalActivity extends AppCompatActivity {
     private Allocation mJuliaValues;
     private Allocation mOutPixelsAllocation;
     private ScriptC_julia mJuliaScript;
-    private ColorMapRS colorMapRS;
+
+    private Plotting plotting;
 
     private int mWidth;
     private int mHeight;
@@ -78,11 +79,7 @@ public class FractalActivity extends AppCompatActivity {
         mJuliaScript.set_width(mWidth / FACTOR);
         mJuliaScript.set_precision(128);
 
-        colorMapRS = new ColorMapRS(mRS);
-        colorMapRS.addLinearGradient(0, 64, 0, 0, 0, 0, 0, 255);
-        colorMapRS.addLinearGradient(64, 128, 0, 0, 0, 255, 255, 255);
-        colorMapRS.addLinearGradient(128, 256, 0, 0, 255, 255, 255, 255);
-        colorMapRS.setColors();
+        plotting = new Plotting(mRS);
 
         renderJulia(-0.9259259f, 0.30855855f);
     }
@@ -116,7 +113,7 @@ public class FractalActivity extends AppCompatActivity {
         mJuliaScript.set_cx(cx);
         mJuliaScript.set_cy(cy);
         mJuliaScript.forEach_julie(mJuliaValues);
-        colorMapRS.applyColorMapToUchar(mJuliaValues, mOutPixelsAllocation);
+        plotting.plotColormapUchar(mJuliaValues, mOutPixelsAllocation);
         mOutPixelsAllocation.copyTo(mBitmap);
 
         mDisplayView.invalidate();

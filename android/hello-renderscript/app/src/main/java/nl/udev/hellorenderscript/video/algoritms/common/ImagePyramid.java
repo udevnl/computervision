@@ -211,7 +211,8 @@ public class ImagePyramid {
         rsPyramid.destroy();
     }
 
-    private int createPyramidLevelBuffers(int desiredLevelCount) {
+    private int
+    createPyramidLevelBuffers(int desiredLevelCount) {
         // Try to build a pyramid with the given number of levels.
         // Note that this will only succeed if the resolution divides in whole numbers all the way.
 

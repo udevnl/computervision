@@ -86,6 +86,7 @@ public class AlgorithmViewerActivity extends AppCompatActivity {
         algorithmList.add(new ImagePyramidAlgorithm());
         algorithmList.add(new TemporalPyramidAlgorithm());
         algorithmList.add(new IntensityAlgorithm());
+        algorithmList.add(new BrightnessMotionAlgorithm());
 
         // Populate HMI with supported algorithms / resolutions
         initializeCameraResolutionSelection();
@@ -99,7 +100,11 @@ public class AlgorithmViewerActivity extends AppCompatActivity {
         super.onResume();
 
         // Start the first algorithm at some default resolution
-        startAlgorithm(algorithmList.get(0), new Size(352, 288));
+        if(selectedAlgorithm == null) {
+            selectedAlgorithm = algorithmList.get(0);
+        }
+
+        startAlgorithm(selectedAlgorithm, new Size(352, 288));
     }
 
     @Override

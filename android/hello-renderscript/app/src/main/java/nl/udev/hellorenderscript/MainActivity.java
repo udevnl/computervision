@@ -15,7 +15,6 @@ import android.view.View;
 
 import nl.udev.hellorenderscript.fractal.FractalActivity;
 import nl.udev.hellorenderscript.video.AlgorithmViewerActivity;
-import nl.udev.hellorenderscript.video.VectorEdgeDetection;
 import nl.udev.hellorenderscript.video.VideoActivity;
 
 public class MainActivity extends AppCompatActivity {
@@ -40,15 +39,6 @@ public class MainActivity extends AppCompatActivity {
     public void startDeltaMovingAverage(View view) {
         if (checkCameraPermissions()) {
             Intent intent = new Intent(this, VideoActivity.class);
-            startActivity(intent);
-        } else {
-            requestCameraPermissions();
-        }
-    }
-
-    public void startGradientVector(View view) {
-        if (checkCameraPermissions()) {
-            Intent intent = new Intent(this, VectorEdgeDetection.class);
             startActivity(intent);
         } else {
             requestCameraPermissions();

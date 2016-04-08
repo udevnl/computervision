@@ -3,14 +3,13 @@ package nl.udev.hellorenderscript.video.algoritms;
 import android.renderscript.Allocation;
 import android.renderscript.Element;
 
-import nl.udev.hellorenderscript.common.ColormapPolar2dRS;
 import nl.udev.hellorenderscript.common.algoritm.AbstractAlgorithm;
 import nl.udev.hellorenderscript.common.algoritm.parameter.IntegerParameter;
 import nl.udev.hellorenderscript.common.algoritm.parameter.ParameterUser;
-import nl.udev.hellorenderscript.video.ScriptC_gradientvector;
 import nl.udev.hellorenderscript.video.ScriptC_interestpoint;
 import nl.udev.hellorenderscript.video.ScriptC_utils;
-import nl.udev.hellorenderscript.video.algoritms.common.Kernels;
+import nl.udev.hellorenderscript.video.algoritms.common.EdgeDetection;
+import nl.udev.hellorenderscript.video.algoritms.common.Plotting;
 
 /**
  * Algorithm to show and detect interest points in an image using another custom algorithm.
@@ -22,18 +21,13 @@ import nl.udev.hellorenderscript.video.algoritms.common.Kernels;
 public class InterestPointDetectionAlgorithm extends AbstractAlgorithm {
 
     private ScriptC_interestpoint rsInterestPoint;
-    private ScriptC_gradientvector rsGradientVector;
     private ScriptC_utils rsUtils;
 
-    private ColormapPolar2dRS colormapPolar2dRS;
+    private Plotting plotting;
+    private EdgeDetection edgeDetection;
 
     private Allocation intensityBuffer;
-    private Allocation gradientVectorsBuffer;
-    private Allocation imageVectorsPolarBuffer;
     private Allocation polarBuffer1;
-
-    // Dynamically created / changed
-    private Allocation kernelVectorsBuffer;
 
     private int kernelSize;
     private int interestAreaSize;
@@ -42,7 +36,6 @@ public class InterestPointDetectionAlgorithm extends AbstractAlgorithm {
     private float binSizeRadians;
     private float maxWeightOutOfBinFactor;
     private float maxAngleBetweenBinsRadians;
-    private boolean kernelSizeChanged;
 
 
     public InterestPointDetectionAlgorithm() {
@@ -65,30 +58,25 @@ public class InterestPointDetectionAlgorithm extends AbstractAlgorithm {
     @Override
     public void process(Allocation captureBufferRgba, Allocation displayBufferRgba) {
 
-        // Support synchronously changing the kernel size
-        updateKernelSizeIfChanged();
-
         // Convert RGB image to intensity (black/white) image
         rsUtils.forEach_calcGreyscaleIntensity(captureBufferRgba, intensityBuffer);
 
         // Calculate the gradients on the intensity buffer
-        rsGradientVector.set_scale(amplification);
-        rsGradientVector.forEach_calcGradientVectors(gradientVectorsBuffer);
-
-        // Convert gradient vectors to polar vectors
-        rsUtils.forEach_toPolar2D(gradientVectorsBuffer, imageVectorsPolarBuffer);
+        edgeDetection.setKernelSize(kernelSize);
+        edgeDetection.setAmplification(amplification);
+        Allocation edgePolarVectors = edgeDetection.calcEdgePolarVectors(intensityBuffer);
 
         // Plot polar vectors
-        colormapPolar2dRS.plotVectorAngles(imageVectorsPolarBuffer, displayBufferRgba);
+        plotting.plotColormapPolar2d(edgePolarVectors, displayBufferRgba);
 
         // Calculate the amount of edge in a certain area
         rsInterestPoint.set_areaSize(interestAreaSize);
-        rsInterestPoint.set_polarEdgeBuffer(imageVectorsPolarBuffer);
+        rsInterestPoint.set_polarEdgeBuffer(edgePolarVectors);
         rsInterestPoint.set_binSizeRadians(binSizeRadians);
         rsInterestPoint.set_minEdgeSize(minEdgeSize);
         rsInterestPoint.set_maxOutOfBinsFactor(maxWeightOutOfBinFactor);
         rsInterestPoint.set_maxAngleBetweenBinsRadians(maxAngleBetweenBinsRadians);
-        rsInterestPoint.forEach_calcInterestPoints(imageVectorsPolarBuffer, polarBuffer1);
+        rsInterestPoint.forEach_calcInterestPoints(edgePolarVectors, polarBuffer1);
 
         // Plot the interest points
         rsInterestPoint.set_plotImageBuffer(displayBufferRgba);
@@ -104,60 +92,39 @@ public class InterestPointDetectionAlgorithm extends AbstractAlgorithm {
     protected void initialize() {
         // Create buffers
         intensityBuffer = create2d(Element.F32(getRenderScript()));
-        gradientVectorsBuffer = create2d(Element.F32_2(getRenderScript()));
-        imageVectorsPolarBuffer = create2d(Element.F32_2(getRenderScript()));
         polarBuffer1 = create2d(Element.F32_2(getRenderScript()));
 
         // Create scriptlets
         rsUtils = new ScriptC_utils(getRenderScript());
-        rsGradientVector = new ScriptC_gradientvector(getRenderScript());
         rsInterestPoint = new ScriptC_interestpoint(getRenderScript());
-
-        // Initialize scriptlets
-        rsGradientVector.set_sourceWidth(getVideoResolution().getWidth());
-        rsGradientVector.set_sourceHeight(getVideoResolution().getHeight());
-        rsGradientVector.set_intensityBuffer(intensityBuffer);
-
         rsInterestPoint.set_sourceWidth(getVideoResolution().getWidth());
         rsInterestPoint.set_sourceHeight(getVideoResolution().getHeight());
 
-        colormapPolar2dRS = new ColormapPolar2dRS
-                .Builder(getRenderScript())
-                .addLinearGradient(0, 90,       1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f) // Red -> Yellow
-                .addLinearGradient(90, 180,     1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f) // Yellow -> Green
-                .addLinearGradient(180, 270,    0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f) // Green -> Cyan
-                .addLinearGradient(270, 360,    0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f) // Cyan -> Red
-                .build();
+        plotting = new Plotting(getRenderScript());
 
-        kernelSizeChanged = true;
-
+        edgeDetection = new EdgeDetection(
+                getRenderScript(),
+                getVideoResolution().getWidth(),
+                getVideoResolution().getHeight(),
+                kernelSize
+        );
     }
 
     @Override
     protected void unInitialize() {
         // Destroy scriptlets
         rsUtils.destroy();
-        rsGradientVector.destroy();
         rsInterestPoint.destroy();
-        colormapPolar2dRS.cleanup();
+        plotting.destroy();
+        edgeDetection.destroy();
 
         // Destroy buffers
         intensityBuffer.destroy();
-        gradientVectorsBuffer.destroy();
-        imageVectorsPolarBuffer.destroy();
-        if(kernelVectorsBuffer != null) {
-            kernelVectorsBuffer.destroy();
-        }
         polarBuffer1.destroy();
 
         rsUtils = null;
-        rsGradientVector = null;
-        colormapPolar2dRS = null;
+        plotting = null;
         intensityBuffer = null;
-        gradientVectorsBuffer = null;
-        imageVectorsPolarBuffer = null;
-        kernelVectorsBuffer = null;
-
     }
 
     private class KernelSizeMonitor implements ParameterUser<Integer> {
@@ -170,7 +137,6 @@ public class InterestPointDetectionAlgorithm extends AbstractAlgorithm {
         @Override
         public void handleValueChanged(Integer newValue) {
             kernelSize = 1 + (newValue - 1) * 2;
-            kernelSizeChanged = true;
         }
     }
 
@@ -249,26 +215,6 @@ public class InterestPointDetectionAlgorithm extends AbstractAlgorithm {
         @Override
         public void handleValueChanged(Integer newValue) {
             maxAngleBetweenBinsRadians = (float)Math.toRadians(newValue);
-        }
-    }
-
-    private void updateKernelSizeIfChanged() {
-
-        if(kernelSizeChanged) {
-            if(kernelVectorsBuffer != null) {
-                kernelVectorsBuffer.destroy();
-                kernelVectorsBuffer = null;
-            }
-
-            kernelVectorsBuffer = create2d(kernelSize, kernelSize, Element.F32_4(getRenderScript()));
-            float kernelBuffer[] = Kernels.createWeightedAngularVectorKernel(kernelSize);
-            kernelVectorsBuffer.copyFrom(kernelBuffer);
-
-            rsGradientVector.set_kernelBuffer(kernelVectorsBuffer);
-            rsGradientVector.set_kernelSquareRadius((kernelSize - 1) / 2);
-            rsGradientVector.set_totalKernelWeight(Kernels.calculateTotalKernelWeight(kernelBuffer));
-
-            kernelSizeChanged = false;
         }
     }
 }
