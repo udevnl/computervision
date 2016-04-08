@@ -46,13 +46,13 @@ public class EdgeDetection {
         rsEdge.set_sourceHeight(height);
 
         edgeVectorsBuffer = create2d(rs, width, height, Element.F32_2(rs));
-        edgeVectorsSeparationStep1Buffer = create2d(rs, width, height, Element.F32_2(rs));
+        edgeVectorsSeparationStep1Buffer = create2d(rs, width, height, Element.F32(rs));
         edgePolarVectorsBuffer = create2d(rs, width, height, Element.F32_2(rs));
         edgeMagnitudesBuffer = create2d(rs, width, height, Element.F32(rs));
 
         setKernelSize(initialKernelSize);
         setAmplification(1.0f);
-        setKernelMode(KernelMode.FULL_2D);
+        setKernelMode(KernelMode.KernelVector2D);
     }
 
     /**
@@ -118,10 +118,10 @@ public class EdgeDetection {
         rsEdge.set_intensityBuffer(intensityBuffer);
 
         switch (kernelMode) {
-            case FULL_2D:
+            case KernelVector2D:
                 rsEdge.forEach_applyVectorKernel(edgeVectorsBuffer);
                 break;
-            case SEPARABLE:
+            case KernelVector2dSeparable2N:
                 rsEdge.forEach_applyVectorKernelPart1(edgeVectorsSeparationStep1Buffer);
                 rsEdge.set_step1Buffer(edgeVectorsSeparationStep1Buffer);
                 rsEdge.forEach_applyVectorKernelPart2(edgeVectorsBuffer);
@@ -156,7 +156,7 @@ public class EdgeDetection {
     }
 
     public enum KernelMode {
-        FULL_2D,
-        SEPARABLE
+        KernelVector2D,
+        KernelVector2dSeparable2N
     }
 }

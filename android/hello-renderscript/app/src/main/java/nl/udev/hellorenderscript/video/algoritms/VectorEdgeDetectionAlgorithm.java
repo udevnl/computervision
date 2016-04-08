@@ -65,10 +65,10 @@ public class VectorEdgeDetectionAlgorithm extends AbstractAlgorithm {
     public VectorEdgeDetectionAlgorithm() {
         addParameter(new IntegerParameter("Kernel size", 1, 10, 1, new KernelSizeMonitor()));
         addParameter(new IntegerParameter("Amplification", 1, 100, 1, new AmplificationMonitor()));
-        addParameter(new LimitedSettingsParameter<>("KernelMode", KernelMode.values(), KernelMode.FULL_2D, new ModeMonitor()));
+        addParameter(new LimitedSettingsParameter<>("KernelMode", KernelMode.values(), KernelMode.KernelVector2D, new ModeMonitor()));
         this.kernelSize = 3;
         this.amplification = 2.0f;
-        this.mode = KernelMode.FULL_2D;
+        this.mode = KernelMode.KernelVector2D;
     }
 
     @Override

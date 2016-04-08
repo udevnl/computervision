@@ -73,9 +73,9 @@ float2 __attribute__((kernel)) applyVectorKernel(int32_t x, int32_t y) {
 // ------------------------------------------------------------------------------------------------
 float totalKernelWeight2N;
 
-float2 __attribute__((kernel)) applyVectorKernelPart1(int32_t x, int32_t y) {
+float __attribute__((kernel)) applyVectorKernelPart1(int32_t x, int32_t y) {
 
-    float2 averageVector = 0;
+    float averageVector = 0;
 
     int xs = x - kernelSquareRadius;
     int xe = x + kernelSquareRadius;
@@ -88,7 +88,7 @@ float2 __attribute__((kernel)) applyVectorKernelPart1(int32_t x, int32_t y) {
         kernelX = 0;
         for(imageX = xs; imageX <= xe; imageX++) {
             kernelPositionVector = rsGetElementAt_float4(kernelBuffer, kernelX, kernelSquareRadius);
-            averageVector += kernelPositionVector.xy * rsGetElementAt_float(intensityBuffer, imageX, y) * kernelPositionVector.z;
+            averageVector += kernelPositionVector.x * rsGetElementAt_float(intensityBuffer, imageX, y) * kernelPositionVector.z;
             kernelX++;
         }
     }
@@ -96,7 +96,7 @@ float2 __attribute__((kernel)) applyVectorKernelPart1(int32_t x, int32_t y) {
     return averageVector;
 }
 
-rs_allocation step1Buffer; // float2
+rs_allocation step1Buffer; // float
 float2 __attribute__((kernel)) applyVectorKernelPart2(int32_t x, int32_t y) {
 
     float2 averageVector = 0;
@@ -104,7 +104,7 @@ float2 __attribute__((kernel)) applyVectorKernelPart2(int32_t x, int32_t y) {
     int ys = y - kernelSquareRadius;
     int ye = y + kernelSquareRadius;
 
-    if( ys >= 0 && ye < sourceHeight) {
+    if(ys >= 0 && ye < sourceHeight) {
 
         float4 kernelPositionVector;
         int imageY, kernelY;
@@ -112,7 +112,8 @@ float2 __attribute__((kernel)) applyVectorKernelPart2(int32_t x, int32_t y) {
         kernelY = 0;
         for(imageY = ys; imageY <= ye; imageY++) {
             kernelPositionVector = rsGetElementAt_float4(kernelBuffer, kernelSquareRadius, kernelY);
-            averageVector += kernelPositionVector.xy * rsGetElementAt_float2(step1Buffer, x, imageY) * kernelPositionVector.z;
+            averageVector.x += rsGetElementAt_float(step1Buffer, x, imageY);
+            averageVector.y += kernelPositionVector.y * rsGetElementAt_float(intensityBuffer, x, imageY) * kernelPositionVector.z;
             kernelY++;
         }
     }
