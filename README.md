@@ -16,6 +16,14 @@ Lastly, there exist libraries like OpenCV for performing many computer vision op
 * I want to get hands-on experience developing algoritms and eventually know enough to develop my own
 * I want to get hands-on experience with parallel computing with kernels as used in renderscript / CUDA
 * I am currently unfamiliar with many of the mathematical concepts like matrixes, eigen-values, neural networks. Learning OpenCV is too steep
- 
 
- 
+**Videos (click to watch on YouTube)**
+
+Vector based edge detection
+
+[![Vector based edge detection video](https://img.youtube.com/vi/vCGlqoCcdD0/0.jpg)](https://www.youtube.com/watch?v=vCGlqoCcdD0)
+
+Interest Point Detection
+
+[![Vector based edge detection video](https://img.youtube.com/vi/kimTh542kfI/0.jpg)](https://www.youtube.com/watch?v=kimTh542kfI)
+
