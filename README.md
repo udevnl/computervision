@@ -27,3 +27,6 @@ Interest Point Detection
 
 [![Vector based edge detection video](https://img.youtube.com/vi/kimTh542kfI/0.jpg)](https://www.youtube.com/watch?v=kimTh542kfI)
 
+Particle forces simulation
+
+[![Vector based edge detection video](https://img.youtube.com/vi/NDALoW5n7i0/0.jpg)](https://www.youtube.com/watch?v=NDALoW5n7i0)
