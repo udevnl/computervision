@@ -2,6 +2,7 @@ package nl.udev.hellorenderscript.video.algoritms;
 
 import android.renderscript.Allocation;
 import android.renderscript.Element;
+import android.text.Html;
 import android.util.Size;
 
 import nl.udev.hellorenderscript.common.algoritm.AbstractAlgorithm;
@@ -16,7 +17,7 @@ import nl.udev.hellorenderscript.video.algoritms.common.Kernels;
 /**
  * Motion detection algorithm to detect motion based on extrapolating the gradients.
  *
- * This algorithm suffers from the aperture problem
+ * See #getDescription
  *
  * Created by ben on 11-4-16.
  */
@@ -69,8 +70,15 @@ public class GradientMotionAlgorithm extends AbstractAlgorithm {
     }
 
     @Override
-    protected String getName() {
+    public String getName() {
         return TAG;
+    }
+
+    @Override
+    public CharSequence getDescription() {
+        return Html.fromHtml(
+                "Detect motion vectors based on determining the motion of the gradient at each NxN position."
+        );
     }
 
     @Override

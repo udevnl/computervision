@@ -2,6 +2,7 @@ package nl.udev.hellorenderscript.video.algoritms;
 
 import android.renderscript.Allocation;
 import android.renderscript.Element;
+import android.text.Html;
 
 import nl.udev.hellorenderscript.common.algoritm.AbstractAlgorithm;
 import nl.udev.hellorenderscript.common.algoritm.parameter.IntegerParameter;
@@ -21,6 +22,7 @@ import nl.udev.hellorenderscript.video.algoritms.common.Plotting;
  */
 public class InterestPoint2Algorithm extends AbstractAlgorithm {
 
+    private static final String TAG = "InterestPointAlt";
     private ScriptC_interest2 rsInterestPoint;
     private ScriptC_utils rsUtils;
 
@@ -61,6 +63,20 @@ public class InterestPoint2Algorithm extends AbstractAlgorithm {
     }
 
     @Override
+    public String getName() {
+        return TAG;
+    }
+
+    @Override
+    public CharSequence getDescription() {
+        return Html.fromHtml("Marks area's where edges have different directions. " +
+                "It was written to investigate if these area's are usable interest points. Control display with parameters:" +
+                "<br>" +
+                "<br><b>Start/End ratio:</b> 1 means single direction and <1 means multiple" +
+                "<br><b>MinLength:</b> minimum total direction needed");
+    }
+
+    @Override
     public void process(Allocation captureBufferRgba, Allocation displayBufferRgba) {
 
         // Convert RGB image to intensity (black/white) image
@@ -92,11 +108,6 @@ public class InterestPoint2Algorithm extends AbstractAlgorithm {
         }
 
         rsInterestPoint.forEach_plotInterestPoints(polarBuffer1, displayBufferRgba);
-    }
-
-    @Override
-    protected String getName() {
-        return "IntPtDet v2";
     }
 
     @Override

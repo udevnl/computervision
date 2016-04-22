@@ -17,7 +17,7 @@ import nl.udev.hellorenderscript.video.algoritms.common.TemporalPyramid;
  */
 public class TemporalPyramidAlgorithm extends AbstractAlgorithm {
 
-    private static final String TAG = "TPyramidAlg";
+    private static final String TAG = "TemporalPyramid";
 
     private static final int MAX_PIRAMID_LEVELS = 5;
 
@@ -55,8 +55,13 @@ public class TemporalPyramidAlgorithm extends AbstractAlgorithm {
     }
 
     @Override
-    protected String getName() {
-        return "TemporalPyramid";
+    public String getName() {
+        return TAG;
+    }
+
+    @Override
+    public String getDescription() {
+        return "Experiment what a temporal Laplacian pyramid would look like.";
     }
 
     @Override

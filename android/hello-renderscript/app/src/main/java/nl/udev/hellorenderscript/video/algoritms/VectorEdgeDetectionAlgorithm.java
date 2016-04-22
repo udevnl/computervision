@@ -2,6 +2,7 @@ package nl.udev.hellorenderscript.video.algoritms;
 
 import android.renderscript.Allocation;
 import android.renderscript.Element;
+import android.text.Html;
 
 import nl.udev.hellorenderscript.common.algoritm.AbstractAlgorithm;
 import nl.udev.hellorenderscript.common.algoritm.parameter.IntegerParameter;
@@ -72,8 +73,20 @@ public class VectorEdgeDetectionAlgorithm extends AbstractAlgorithm {
     }
 
     @Override
-    protected String getName() {
+    public String getName() {
         return TAG;
+    }
+
+    @Override
+    public CharSequence getDescription() {
+        return Html.fromHtml(
+                "Detect edges by converting the brightness at each kernel position to a vector:" +
+                        "<br><b>A)</b> each kernel position is assigned a vector which matches the " +
+                        "angle that position has from the center of the kernel." +
+                        "<br><b>B)</b> when applying the kernel the brightness at the kernel position is the" +
+                        " length and the vector in the kernel the direction." +
+                        "<br><b>C)</b> all resulting vectors are summed resulting in the edge direction"
+        );
     }
 
     @Override

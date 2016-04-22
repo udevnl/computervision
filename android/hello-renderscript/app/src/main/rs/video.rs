@@ -68,18 +68,20 @@ uchar4 __attribute__((kernel)) multiplySums(uchar4 in, uint32_t x, uint32_t y) {
     int4 inSum = rsGetElementAt_int4(sumIn, x, y) * sumOutSize;
     int4 outSum = rsGetElementAt_int4(sumOut, x, y) * sumInSize;
 
-    int factor = sumInSize * sumOutSize * 50;
+    //int factor = sumInSize * sumOutSize * 50;
+    int inBw = inSum.r + inSum.g + inSum.b;
+    int outBw = outSum.r + outSum.g + outSum.b;
 
-    inSum -= outSum;
-    inSum *= amplification;
-    inSum /= factor;
+    // The difference, amplify and then normalize to 1
+    inBw -= outBw;
+    inBw *= amplification;
+    inBw /= sumInSize * sumOutSize * 3; // 3 because we took R+G+B
 
-    // The value to multiply by between 0-255
-    int absVal = abs((inSum.r + inSum.g + inSum.b) / 3);
-    int multiplyFactor = clamp(absVal, 0, 255);
+    // Now apply the resulting difference value as a factor in the original image
+    // return convert_uchar4(convert_int4(in) * clamp(abs(inBw), 0, 255) / 255);
 
-    // Now multiply the output
-    return convert_uchar4(convert_int4(in) * multiplyFactor / 255);
+    // Just diplay the result
+    return convert_uchar4(clamp((int4) abs(inBw), 0, 255));
 }
 
 

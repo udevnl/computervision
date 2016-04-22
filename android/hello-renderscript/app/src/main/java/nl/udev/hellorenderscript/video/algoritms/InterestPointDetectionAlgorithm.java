@@ -21,6 +21,7 @@ import nl.udev.hellorenderscript.video.algoritms.common.Plotting;
  */
 public class InterestPointDetectionAlgorithm extends AbstractAlgorithm {
 
+    private static final String TAG = "InterestPoint";
     private ScriptC_interestpoint rsInterestPoint;
     private ScriptC_utils rsUtils;
 
@@ -64,6 +65,16 @@ public class InterestPointDetectionAlgorithm extends AbstractAlgorithm {
     }
 
     @Override
+    public String getName() {
+        return TAG;
+    }
+
+    @Override
+    public String getDescription() {
+        return "Mark the corners of the edges where there are exactly two strong directions";
+    }
+
+    @Override
     public void process(Allocation captureBufferRgba, Allocation displayBufferRgba) {
 
         // Convert RGB image to intensity (black/white) image
@@ -95,11 +106,6 @@ public class InterestPointDetectionAlgorithm extends AbstractAlgorithm {
         }
 
         rsInterestPoint.forEach_plotInterestPoints(polarBuffer1, displayBufferRgba);
-    }
-
-    @Override
-    protected String getName() {
-        return "InterestPoint detection";
     }
 
     @Override

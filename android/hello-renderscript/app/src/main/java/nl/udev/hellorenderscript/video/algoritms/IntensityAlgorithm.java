@@ -25,8 +25,14 @@ public class IntensityAlgorithm extends AbstractAlgorithm {
     }
 
     @Override
-    protected String getName() {
-        return "Intensity";
+    public String getName() {
+        return TAG;
+    }
+
+    @Override
+    public String getDescription() {
+        return "Simple algorithm that only adjusts the brightness." +
+                " This algorithm shows how easy it is to write a new algorithm.";
     }
 
     @Override

@@ -58,8 +58,13 @@ public class ImagePyramidAlgorithm extends AbstractAlgorithm {
     }
 
     @Override
-    protected String getName() {
-        return "ImagePyramid";
+    public String getName() {
+        return TAG;
+    }
+
+    @Override
+    public String getDescription() {
+        return "Laplacian image pyramid implementation.";
     }
 
     @Override

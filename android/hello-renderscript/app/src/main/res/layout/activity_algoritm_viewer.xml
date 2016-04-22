@@ -60,8 +60,19 @@
             android:background="#f0f0f0"
             android:layout_below="@+id/linearLayout3"
             android:layout_alignParentStart="true"
-            android:id="@+id/algorithmParameters"></LinearLayout>
+            android:id="@+id/algorithmParameters">
+
+        </LinearLayout>
 
     </RelativeLayout>
+
+    <Button
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Alg. info"
+        android:id="@+id/algorithmInfoButton"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentStart="true" />
 
 </RelativeLayout>

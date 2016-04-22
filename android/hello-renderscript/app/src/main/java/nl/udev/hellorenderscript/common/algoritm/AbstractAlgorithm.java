@@ -72,7 +72,12 @@ public abstract class AbstractAlgorithm {
     /**
      * @return  the display name of the algorithm
      */
-    protected abstract String getName();
+    public abstract String getName();
+
+    /**
+     * @return description of what the algorithm does.
+     */
+    public abstract CharSequence getDescription();
 
     /**
      * Perform initialization of the algorithm.

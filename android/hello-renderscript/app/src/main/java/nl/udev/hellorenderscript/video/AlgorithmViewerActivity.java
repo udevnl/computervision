@@ -1,14 +1,15 @@
 package nl.udev.hellorenderscript.video;
 
+import android.app.AlertDialog;
 import android.graphics.Bitmap;
 import android.hardware.camera2.CameraManager;
+import android.os.Bundle;
 import android.renderscript.Allocation;
 import android.renderscript.Element;
 import android.renderscript.RenderScript;
 import android.renderscript.Type;
 import android.support.v4.view.MotionEventCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.util.Log;
 import android.util.Size;
 import android.view.MotionEvent;
@@ -31,8 +32,14 @@ import nl.udev.hellorenderscript.common.algoritm.AbstractAlgorithm;
 import nl.udev.hellorenderscript.common.algoritm.parameter.AbstractParameter;
 import nl.udev.hellorenderscript.common.algoritm.parameter.IntegerParameter;
 import nl.udev.hellorenderscript.common.algoritm.parameter.LimitedSettingsParameter;
-import nl.udev.hellorenderscript.common.algoritm.parameter.ParameterUser;
-import nl.udev.hellorenderscript.video.algoritms.*;
+import nl.udev.hellorenderscript.video.algoritms.BrightnessMotionAlgorithm;
+import nl.udev.hellorenderscript.video.algoritms.GradientMotionAlgorithm;
+import nl.udev.hellorenderscript.video.algoritms.ImagePyramidAlgorithm;
+import nl.udev.hellorenderscript.video.algoritms.IntensityAlgorithm;
+import nl.udev.hellorenderscript.video.algoritms.InterestPoint2Algorithm;
+import nl.udev.hellorenderscript.video.algoritms.InterestPointDetectionAlgorithm;
+import nl.udev.hellorenderscript.video.algoritms.TemporalPyramidAlgorithm;
+import nl.udev.hellorenderscript.video.algoritms.VectorEdgeDetectionAlgorithm;
 import nl.udev.hellorenderscript.video.common.VideoCaptureListener;
 import nl.udev.hellorenderscript.video.common.VideoCaptureProcessor;
 
@@ -77,6 +84,9 @@ public class AlgorithmViewerActivity extends AppCompatActivity {
 
         // Get references to the hmi elements
         hmiDisplayView = (ImageView) findViewById(R.id.imageView);
+
+        // Add dialog to the algorithm viewer button
+        findViewById(R.id.algorithmInfoButton).setOnClickListener(new AlgorithmInfoPopupHandler());
 
         // Initialize the algoritm parts
         rs = RenderScript.create(this);
@@ -478,5 +488,18 @@ public class AlgorithmViewerActivity extends AppCompatActivity {
     private void removeAlgorithmHmi() {
         LinearLayout linearLayout = (LinearLayout) findViewById(R.id.algorithmParameters);
         linearLayout.removeAllViews();
+    }
+
+    private class AlgorithmInfoPopupHandler implements View.OnClickListener {
+
+        @Override
+        public void onClick(View v) {
+            if(selectedAlgorithm != null) {
+                new AlertDialog.Builder(AlgorithmViewerActivity.this)
+                        .setTitle(selectedAlgorithm.getName())
+                        .setMessage(selectedAlgorithm.getDescription())
+                        .show();
+            }
+        }
     }
 }

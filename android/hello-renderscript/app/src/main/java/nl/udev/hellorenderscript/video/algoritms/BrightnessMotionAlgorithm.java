@@ -2,6 +2,7 @@ package nl.udev.hellorenderscript.video.algoritms;
 
 import android.renderscript.Allocation;
 import android.renderscript.Element;
+import android.text.Html;
 import android.util.Size;
 
 import nl.udev.hellorenderscript.common.algoritm.AbstractAlgorithm;
@@ -13,13 +14,15 @@ import nl.udev.hellorenderscript.video.ScriptC_utils;
 import nl.udev.hellorenderscript.video.algoritms.common.EdgeDetection;
 
 /**
- * Simple algorithm that detects the motion of the center of brightness between two frames.
+ * Algorithm that calculates the center-of-weight of the input (edges/brightness) in each area.
+ *
+ * See #getDescription
  *
  * Created by ben on 8-4-16.
  */
 public class BrightnessMotionAlgorithm extends AbstractAlgorithm {
 
-    private static final String TAG = "BrightMotionAlg";
+    private static final String TAG = "BrightnessMotion";
 
     public static final int DEFAULT_BLOCK_COUNT = 16;
 
@@ -68,8 +71,17 @@ public class BrightnessMotionAlgorithm extends AbstractAlgorithm {
     }
 
     @Override
-    protected String getName() {
+    public String getName() {
         return TAG;
+    }
+
+    @Override
+    public CharSequence getDescription() {
+        return Html.fromHtml("Calculates the center-of-weight of each NxN input block (edges/brightness). " +
+                "This algorithm should prove if this is a good indication for detecting motion." +
+                "<br>" +
+                "<br><b>View_BrightOverlay</b> shows the center-of-weight for each area. " +
+                "<br><b>View_MotionOverlay</b> shows center-of-weight motion between frames.");
     }
 
     @Override
