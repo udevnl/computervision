@@ -4,14 +4,14 @@ import android.renderscript.Allocation;
 import android.renderscript.Element;
 import android.text.Html;
 
-import nl.udev.hellorenderscript.common.algoritm.AbstractAlgorithm;
+import nl.udev.hellorenderscript.video.AbstractVideoAlgorithm;
 import nl.udev.hellorenderscript.common.algoritm.parameter.IntegerParameter;
 import nl.udev.hellorenderscript.common.algoritm.parameter.LimitedSettingsParameter;
 import nl.udev.hellorenderscript.common.algoritm.parameter.ParameterUser;
 import nl.udev.hellorenderscript.video.ScriptC_utils;
-import nl.udev.hellorenderscript.video.algoritms.common.EdgeDetection;
-import nl.udev.hellorenderscript.video.algoritms.common.EdgeDetection.KernelMode;
-import nl.udev.hellorenderscript.video.algoritms.common.Plotting;
+import nl.udev.hellorenderscript.common.algoritm.parts.EdgeDetection;
+import nl.udev.hellorenderscript.common.algoritm.parts.EdgeDetection.KernelMode;
+import nl.udev.hellorenderscript.common.algoritm.parts.Plotting;
 
 /**
  * Algorithm that performs edge gradient detection using a new method I thought of:
@@ -49,7 +49,7 @@ import nl.udev.hellorenderscript.video.algoritms.common.Plotting;
  *
  * Created by ben on 9-2-16.
  */
-public class VectorEdgeDetectionAlgorithm extends AbstractAlgorithm {
+public class VectorEdgeDetectionAlgorithm extends AbstractVideoAlgorithm {
 
     private static final String TAG = "VectorEdgeAlg";
 
@@ -94,8 +94,8 @@ public class VectorEdgeDetectionAlgorithm extends AbstractAlgorithm {
 
         edgeDetection = new EdgeDetection(
                 getRenderScript(),
-                getVideoResolution().getWidth(),
-                getVideoResolution().getHeight(),
+                getResolution().getWidth(),
+                getResolution().getHeight(),
                 kernelSize
         );
 

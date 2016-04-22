@@ -5,13 +5,13 @@ import android.renderscript.Element;
 import android.text.Html;
 import android.util.Size;
 
-import nl.udev.hellorenderscript.common.algoritm.AbstractAlgorithm;
+import nl.udev.hellorenderscript.video.AbstractVideoAlgorithm;
 import nl.udev.hellorenderscript.common.algoritm.parameter.IntegerParameter;
 import nl.udev.hellorenderscript.common.algoritm.parameter.LimitedSettingsParameter;
 import nl.udev.hellorenderscript.common.algoritm.parameter.ParameterUser;
 import nl.udev.hellorenderscript.video.ScriptC_brightnessmotion;
 import nl.udev.hellorenderscript.video.ScriptC_utils;
-import nl.udev.hellorenderscript.video.algoritms.common.EdgeDetection;
+import nl.udev.hellorenderscript.common.algoritm.parts.EdgeDetection;
 
 /**
  * Algorithm that calculates the center-of-weight of the input (edges/brightness) in each area.
@@ -20,7 +20,7 @@ import nl.udev.hellorenderscript.video.algoritms.common.EdgeDetection;
  *
  * Created by ben on 8-4-16.
  */
-public class BrightnessMotionAlgorithm extends AbstractAlgorithm {
+public class BrightnessMotionAlgorithm extends AbstractVideoAlgorithm {
 
     private static final String TAG = "BrightnessMotion";
 
@@ -89,8 +89,8 @@ public class BrightnessMotionAlgorithm extends AbstractAlgorithm {
 
         edgeDetection = new EdgeDetection(
                 getRenderScript(),
-                getVideoResolution().getWidth(),
-                getVideoResolution().getHeight(),
+                getResolution().getWidth(),
+                getResolution().getHeight(),
                 3
         );
 
@@ -163,8 +163,8 @@ public class BrightnessMotionAlgorithm extends AbstractAlgorithm {
                 break;
             case View_MotionOverlay:
                 rsBrightnessMotion.set_plotDestination(displayBufferRgba);
-                rsBrightnessMotion.set_plotWidth(getVideoResolution().getWidth());
-                rsBrightnessMotion.set_plotHeight(getVideoResolution().getHeight());
+                rsBrightnessMotion.set_plotWidth(getResolution().getWidth());
+                rsBrightnessMotion.set_plotHeight(getResolution().getHeight());
                 displayBufferRgba.copyFrom(captureBufferRgba);
                 rsBrightnessMotion.forEach_calcOverlayMotionBlocks(motionBlocks);
 
@@ -188,7 +188,7 @@ public class BrightnessMotionAlgorithm extends AbstractAlgorithm {
 
             // Calculate the block size for the image
             // If it does not fit perfectly it will still work but we will not use the full image.
-            Size imageSize = getVideoResolution();
+            Size imageSize = getResolution();
             blockSizeX = imageSize.getWidth() / blockCount;
             blockSizeY = imageSize.getHeight() / blockCount;
 

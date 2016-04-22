@@ -8,18 +8,27 @@ import nl.udev.hellorenderscript.common.algoritm.parameter.ParameterUser;
 import nl.udev.hellorenderscript.video.ScriptC_intensity;
 
 /**
- * Simple algorithm that can adjust the intensity of an image.
+ * Idea to detect fluctuations in video by taking grand averages.
  *
- * Created by ben on 25-3-16.
+ * 1. Blur each frame with NxN kernel
+ *    --- important! only sum, do not divide so we do not lose data ---
+ *
+ * 2. Keep the last X blurred frames in buffers
+ *
+ * 3. Calculate two moving averages A and B each averaging a different number of input buffers
+ *
+ * 4. Visualize the difference
+ *
+ * Created by ben on 22-4-16.
  */
-public class IntensityAlgorithm extends AbstractVideoAlgorithm {
+public class FluctuationsAlgorithm extends AbstractVideoAlgorithm {
 
-    private static final String TAG = "IntensityAlg";
+    private static final String TAG = "Fluctuations";
     private ScriptC_intensity rsIntensity;
 
     private float intensityFactor;
 
-    public IntensityAlgorithm() {
+    public FluctuationsAlgorithm() {
         addParameter(new IntegerParameter("Intensity", 0, 500, 100, new IntensityParameterMonitor()));
         this.intensityFactor = 1.0f;
     }
@@ -31,8 +40,7 @@ public class IntensityAlgorithm extends AbstractVideoAlgorithm {
 
     @Override
     public String getDescription() {
-        return "Simple algorithm that only adjusts the brightness." +
-                " This algorithm shows how easy it is to write a new algorithm.";
+        return "TODO";
     }
 
     @Override

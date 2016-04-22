@@ -5,14 +5,14 @@ import android.renderscript.Element;
 import android.text.Html;
 import android.util.Size;
 
-import nl.udev.hellorenderscript.common.algoritm.AbstractAlgorithm;
+import nl.udev.hellorenderscript.video.AbstractVideoAlgorithm;
 import nl.udev.hellorenderscript.common.algoritm.parameter.IntegerParameter;
 import nl.udev.hellorenderscript.common.algoritm.parameter.LimitedSettingsParameter;
 import nl.udev.hellorenderscript.common.algoritm.parameter.ParameterUser;
 import nl.udev.hellorenderscript.video.ScriptC_gradientmotion;
 import nl.udev.hellorenderscript.video.ScriptC_utils;
-import nl.udev.hellorenderscript.video.algoritms.common.EdgeDetection;
-import nl.udev.hellorenderscript.video.algoritms.common.Kernels;
+import nl.udev.hellorenderscript.common.algoritm.parts.EdgeDetection;
+import nl.udev.hellorenderscript.common.algoritm.parts.Kernels;
 
 /**
  * Motion detection algorithm to detect motion based on extrapolating the gradients.
@@ -21,7 +21,7 @@ import nl.udev.hellorenderscript.video.algoritms.common.Kernels;
  *
  * Created by ben on 11-4-16.
  */
-public class GradientMotionAlgorithm extends AbstractAlgorithm {
+public class GradientMotionAlgorithm extends AbstractVideoAlgorithm {
 
     private static final String TAG = "GradMotionAlg";
 
@@ -86,8 +86,8 @@ public class GradientMotionAlgorithm extends AbstractAlgorithm {
 
         edgeDetection = new EdgeDetection(
                 getRenderScript(),
-                getVideoResolution().getWidth(),
-                getVideoResolution().getHeight(),
+                getResolution().getWidth(),
+                getResolution().getHeight(),
                 3
         );
 
@@ -157,8 +157,8 @@ public class GradientMotionAlgorithm extends AbstractAlgorithm {
                 break;
             case View_MotionOverlay:
                 rsGradientMotion.set_plotDestination(displayBufferRgba);
-                rsGradientMotion.set_plotWidth(getVideoResolution().getWidth());
-                rsGradientMotion.set_plotHeight(getVideoResolution().getHeight());
+                rsGradientMotion.set_plotWidth(getResolution().getWidth());
+                rsGradientMotion.set_plotHeight(getResolution().getHeight());
                 displayBufferRgba.copyFrom(captureBufferRgba);
                 rsGradientMotion.forEach_calcOverlayMotionBlocks(motionBlocks);
 
@@ -182,7 +182,7 @@ public class GradientMotionAlgorithm extends AbstractAlgorithm {
 
             // Calculate the block size for the image
             // If it does not fit perfectly it will still work but we will not use the full image.
-            Size imageSize = getVideoResolution();
+            Size imageSize = getResolution();
 
             if(motionBlocks != null) {
                 motionBlocks.destroy();

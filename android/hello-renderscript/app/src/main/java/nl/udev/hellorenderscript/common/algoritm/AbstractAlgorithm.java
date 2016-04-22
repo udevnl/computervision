@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import nl.udev.hellorenderscript.common.algoritm.parameter.AbstractParameter;
+import nl.udev.hellorenderscript.common.algoritm.parts.RsUtils;
 
 /**
  * Base class which contains common video processing algorithm functionality.
@@ -22,15 +23,8 @@ public abstract class AbstractAlgorithm {
     private static final String TAG = "Algorithm";
 
     private final List<AbstractParameter> parameters = new ArrayList<>();
-    private Size videoResolution;
+    private Size resolution;
     private RenderScript rs;
-
-    /**
-     * Process the new captured data and display the output in the display buffer.
-     * @param captureBufferRgba    Buffer containing the newly captured video frame
-     * @param displayBufferRgba    Buffer to visualize the output in
-     */
-    public abstract void process(Allocation captureBufferRgba, Allocation displayBufferRgba);
 
     /**
      * Initialize the algorithm.
@@ -40,7 +34,7 @@ public abstract class AbstractAlgorithm {
      */
     public void initialize(Size videoResolution, RenderScript rs) {
         Log.i(TAG, "Initialize algorithm: " + toString());
-        this.videoResolution = videoResolution;
+        this.resolution = videoResolution;
         this.rs = rs;
         initialize();
     }
@@ -104,7 +98,7 @@ public abstract class AbstractAlgorithm {
      * @return
      */
     protected Allocation create2d(Element elementType) {
-        return create2d(videoResolution.getWidth(), videoResolution.getHeight(), elementType);
+        return create2d(resolution.getWidth(), resolution.getHeight(), elementType);
     }
 
     /**
@@ -126,10 +120,7 @@ public abstract class AbstractAlgorithm {
      * @return
      */
     protected Allocation create2d(int width, int height, Element elementType) {
-        Type.Builder vectorBufferBuilder = new Type.Builder(rs, elementType);
-        vectorBufferBuilder.setX(width);
-        vectorBufferBuilder.setY(height);
-        return Allocation.createTyped(rs, vectorBufferBuilder.create(), Allocation.USAGE_SCRIPT);
+        return RsUtils.create2d(rs, width, height, elementType);
     }
 
     /**
@@ -150,7 +141,7 @@ public abstract class AbstractAlgorithm {
     /**
      * @return  The currently active resolution
      */
-    protected Size getVideoResolution() {
-        return videoResolution;
+    protected Size getResolution() {
+        return resolution;
     }
 }

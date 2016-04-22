@@ -4,14 +4,14 @@ import android.renderscript.Allocation;
 import android.renderscript.Element;
 import android.text.Html;
 
-import nl.udev.hellorenderscript.common.algoritm.AbstractAlgorithm;
+import nl.udev.hellorenderscript.video.AbstractVideoAlgorithm;
 import nl.udev.hellorenderscript.common.algoritm.parameter.IntegerParameter;
 import nl.udev.hellorenderscript.common.algoritm.parameter.LimitedSettingsParameter;
 import nl.udev.hellorenderscript.common.algoritm.parameter.ParameterUser;
 import nl.udev.hellorenderscript.video.ScriptC_interest2;
 import nl.udev.hellorenderscript.video.ScriptC_utils;
-import nl.udev.hellorenderscript.video.algoritms.common.EdgeDetection;
-import nl.udev.hellorenderscript.video.algoritms.common.Plotting;
+import nl.udev.hellorenderscript.common.algoritm.parts.EdgeDetection;
+import nl.udev.hellorenderscript.common.algoritm.parts.Plotting;
 
 /**
  * Another attempt at detecting interest points.
@@ -20,7 +20,7 @@ import nl.udev.hellorenderscript.video.algoritms.common.Plotting;
  *
  * Created by ben on 9-4-16.
  */
-public class InterestPoint2Algorithm extends AbstractAlgorithm {
+public class InterestPoint2Algorithm extends AbstractVideoAlgorithm {
 
     private static final String TAG = "InterestPointAlt";
     private ScriptC_interest2 rsInterestPoint;
@@ -119,15 +119,15 @@ public class InterestPoint2Algorithm extends AbstractAlgorithm {
         // Create scriptlets
         rsUtils = new ScriptC_utils(getRenderScript());
         rsInterestPoint = new ScriptC_interest2(getRenderScript());
-        rsInterestPoint.set_sourceWidth(getVideoResolution().getWidth());
-        rsInterestPoint.set_sourceHeight(getVideoResolution().getHeight());
+        rsInterestPoint.set_sourceWidth(getResolution().getWidth());
+        rsInterestPoint.set_sourceHeight(getResolution().getHeight());
 
         plotting = new Plotting(getRenderScript());
 
         edgeDetection = new EdgeDetection(
                 getRenderScript(),
-                getVideoResolution().getWidth(),
-                getVideoResolution().getHeight(),
+                getResolution().getWidth(),
+                getResolution().getHeight(),
                 kernelSize
         );
     }

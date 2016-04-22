@@ -1,4 +1,4 @@
-package nl.udev.hellorenderscript.video.algoritms.common;
+package nl.udev.hellorenderscript.common.algoritm.parts;
 
 import android.renderscript.Allocation;
 import android.renderscript.Element;
@@ -6,8 +6,6 @@ import android.renderscript.RenderScript;
 
 import nl.udev.hellorenderscript.video.ScriptC_edgedetection;
 import nl.udev.hellorenderscript.video.ScriptC_utils;
-
-import static nl.udev.hellorenderscript.video.algoritms.common.RsUtils.create2d;
 
 /**
  * Wrapper class for the Edge detection RenderScript.
@@ -45,10 +43,10 @@ public class EdgeDetection {
         rsEdge.set_sourceWidth(width);
         rsEdge.set_sourceHeight(height);
 
-        edgeVectorsBuffer = create2d(rs, width, height, Element.F32_2(rs));
-        edgeVectorsSeparationStep1Buffer = create2d(rs, width, height, Element.F32(rs));
-        edgePolarVectorsBuffer = create2d(rs, width, height, Element.F32_2(rs));
-        edgeMagnitudesBuffer = create2d(rs, width, height, Element.F32(rs));
+        edgeVectorsBuffer = RsUtils.create2d(rs, width, height, Element.F32_2(rs));
+        edgeVectorsSeparationStep1Buffer = RsUtils.create2d(rs, width, height, Element.F32(rs));
+        edgePolarVectorsBuffer = RsUtils.create2d(rs, width, height, Element.F32_2(rs));
+        edgeMagnitudesBuffer = RsUtils.create2d(rs, width, height, Element.F32(rs));
 
         setKernelSize(initialKernelSize);
         setAmplification(1.0f);
@@ -88,7 +86,7 @@ public class EdgeDetection {
                 kernelVectorsBuffer.destroy();
             }
 
-            kernelVectorsBuffer = create2d(rs, newSize, newSize, Element.F32_4(rs));
+            kernelVectorsBuffer = RsUtils.create2d(rs, newSize, newSize, Element.F32_4(rs));
 
             float kernelBuffer[] = Kernels.createWeightedAngularVectorKernel(newSize);
             kernelVectorsBuffer.copyFrom(kernelBuffer);

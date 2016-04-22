@@ -5,19 +5,19 @@ import android.renderscript.Element;
 
 import java.util.Arrays;
 
-import nl.udev.hellorenderscript.common.algoritm.AbstractAlgorithm;
+import nl.udev.hellorenderscript.video.AbstractVideoAlgorithm;
 import nl.udev.hellorenderscript.common.algoritm.parameter.IntegerParameter;
 import nl.udev.hellorenderscript.common.algoritm.parameter.LimitedSettingsParameter;
 import nl.udev.hellorenderscript.common.algoritm.parameter.ParameterUser;
 import nl.udev.hellorenderscript.video.ScriptC_utils;
-import nl.udev.hellorenderscript.video.algoritms.common.ImagePyramid;
+import nl.udev.hellorenderscript.common.algoritm.parts.ImagePyramid;
 
 /**
  * Basic algorithm to play with image pyramid.
  *
  * Created by ben on 26-2-16.
  */
-public class ImagePyramidAlgorithm extends AbstractAlgorithm {
+public class ImagePyramidAlgorithm extends AbstractVideoAlgorithm {
 
     private static final String TAG = "PyramidAlg";
 
@@ -78,8 +78,8 @@ public class ImagePyramidAlgorithm extends AbstractAlgorithm {
 
         pyramid = new ImagePyramid(
                 getRenderScript(),
-                getVideoResolution().getWidth(),
-                getVideoResolution().getHeight(),
+                getResolution().getWidth(),
+                getResolution().getHeight(),
                 pyramidCount
         );
 
@@ -109,8 +109,8 @@ public class ImagePyramidAlgorithm extends AbstractAlgorithm {
         // Support synchronously changing the pyramid size
         if(pyramidCountChanged) {
             pyramid.resizePyramid(
-                    getVideoResolution().getWidth(),
-                    getVideoResolution().getHeight(),
+                    getResolution().getWidth(),
+                    getResolution().getHeight(),
                     pyramidCount
             );
             pyramidCountChanged = false;
@@ -156,8 +156,8 @@ public class ImagePyramidAlgorithm extends AbstractAlgorithm {
                     viewLevel,
                     plotType,
                     displayBufferRgba,
-                    getVideoResolution().getWidth(),
-                    getVideoResolution().getHeight()
+                    getResolution().getWidth(),
+                    getResolution().getHeight()
             );
         }
     }

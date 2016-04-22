@@ -1,4 +1,4 @@
-package nl.udev.hellorenderscript.video.algoritms.common;
+package nl.udev.hellorenderscript.common.algoritm.parts;
 
 import android.renderscript.Allocation;
 import android.renderscript.Element;
@@ -9,8 +9,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import nl.udev.hellorenderscript.video.ScriptC_pyramid;
-
-import static nl.udev.hellorenderscript.video.algoritms.common.RsUtils.create2d;
 
 /**
  * The image pyramid consists of stacked image layers.
@@ -217,7 +215,7 @@ public class ImagePyramid {
         // Note that this will only succeed if the resolution divides in whole numbers all the way.
 
         // Insert level 0...
-        levels.add(new Level(0, width, height, null, create2d(rs, width, height, Element.F32(rs)), null, null));
+        levels.add(new Level(0, width, height, null, RsUtils.create2d(rs, width, height, Element.F32(rs)), null, null));
 
         int levelCount = 0;
         int levelWidth = width;
@@ -233,10 +231,10 @@ public class ImagePyramid {
                                 levelNumber,
                                 levelWidth,
                                 levelHeight,
-                                create2d(rs, levelWidth, levelHeight, Element.F32(rs)),
-                                create2d(rs, levelWidth, levelHeight, Element.F32(rs)),
-                                create2d(rs, levelWidth * 2, levelHeight * 2, Element.F32(rs)),
-                                create2d(rs, levelWidth, levelHeight * 2, Element.F32(rs))
+                                RsUtils.create2d(rs, levelWidth, levelHeight, Element.F32(rs)),
+                                RsUtils.create2d(rs, levelWidth, levelHeight, Element.F32(rs)),
+                                RsUtils.create2d(rs, levelWidth * 2, levelHeight * 2, Element.F32(rs)),
+                                RsUtils.create2d(rs, levelWidth, levelHeight * 2, Element.F32(rs))
                         )
                 );
 

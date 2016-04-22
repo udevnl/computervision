@@ -35,7 +35,22 @@ uchar4 __attribute__((kernel)) plotNormalizedFloat8BitColormap(float in) {
 }
 
 
+// ------------------------------------------------------------------------------------------------
+// Plot dots at the given coordinates (positions are float and normalized)
+// ------------------------------------------------------------------------------------------------
 
+void plotDots(rs_allocation points, int pointCount, uchar4 color, rs_allocation image, int width, int height) {
+    float2 point;
+    int2 pos;
+    for(int i = 0; i < pointCount; i++) {
+        point = rsGetElementAt_float2(points, i);
+        if(point.x >= -1 && point.y >= -1 && point.x < 1.0 && point.y < 1.0) {
+            pos.x = ((point.x + 1.0) * width) / 2.0;
+            pos.y = ((point.y + 1.0) * height) / 2.0;
+            rsSetElementAt_uchar4(image, color, pos.x, pos.y);
+        }
+    }
+}
 
 
 // ------------------------------------------------------------------------------------------------

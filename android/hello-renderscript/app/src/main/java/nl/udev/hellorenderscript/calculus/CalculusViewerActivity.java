@@ -1,15 +1,15 @@
-package nl.udev.hellorenderscript.video;
+package nl.udev.hellorenderscript.calculus;
 
 import android.app.AlertDialog;
 import android.graphics.Bitmap;
 import android.hardware.camera2.CameraManager;
-import android.os.Bundle;
 import android.renderscript.Allocation;
 import android.renderscript.Element;
 import android.renderscript.RenderScript;
 import android.renderscript.Type;
 import android.support.v4.view.MotionEventCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
 import android.util.Log;
 import android.util.Size;
 import android.view.MotionEvent;
@@ -26,50 +26,45 @@ import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import nl.udev.hellorenderscript.R;
+import nl.udev.hellorenderscript.calculus.algorithms.GravityAlgorithm;
 import nl.udev.hellorenderscript.common.algoritm.AbstractAlgorithm;
 import nl.udev.hellorenderscript.common.algoritm.parameter.AbstractParameter;
 import nl.udev.hellorenderscript.common.algoritm.parameter.IntegerParameter;
 import nl.udev.hellorenderscript.common.algoritm.parameter.LimitedSettingsParameter;
-import nl.udev.hellorenderscript.video.algoritms.BrightnessMotionAlgorithm;
-import nl.udev.hellorenderscript.video.algoritms.GradientMotionAlgorithm;
-import nl.udev.hellorenderscript.video.algoritms.ImagePyramidAlgorithm;
-import nl.udev.hellorenderscript.video.algoritms.IntensityAlgorithm;
-import nl.udev.hellorenderscript.video.algoritms.InterestPoint2Algorithm;
-import nl.udev.hellorenderscript.video.algoritms.InterestPointDetectionAlgorithm;
-import nl.udev.hellorenderscript.video.algoritms.TemporalPyramidAlgorithm;
+import nl.udev.hellorenderscript.common.algoritm.parameter.ParameterType;
+import nl.udev.hellorenderscript.common.algoritm.parameter.TouchPositionParameter;
 import nl.udev.hellorenderscript.video.algoritms.VectorEdgeDetectionAlgorithm;
 import nl.udev.hellorenderscript.video.common.VideoCaptureListener;
-import nl.udev.hellorenderscript.video.common.VideoCaptureProcessor;
 
-/**
- * Activity that supports the generic "AbstractAlgorithm".
- *
- * The activity is the wrapper that invokes the algorithm and displays the controls provided by
- * the algorithm to the user.
- */
-public class AlgorithmViewerActivity extends AppCompatActivity {
+public class CalculusViewerActivity extends AppCompatActivity {
 
-    private static final String TAG = "AlgView";
+    private static final String TAG = "AlgViewCalculus";
 
     private RenderScript rs;
+
+    ExecutorService algorithmExecutor;
+    Future<?> algorithmRunner;
 
     // Display part
     private Bitmap displayBitmap;
     private ImageView hmiDisplayView;
     private Allocation displayBuffer;
 
-    private VideoCaptureProcessor videoCaptureProcessor;
     private Size videoSize;
     private boolean algorithmActive = false;
-    private volatile boolean capturing = false;
     private long lastTime = 0;
     private double frameRate;
 
-    private final List<AbstractVideoAlgorithm> algorithmList = new ArrayList<>();
-    private AbstractVideoAlgorithm selectedAlgorithm;
-
+    private final List<AbstractCalculusAlgorithm> algorithmList = new ArrayList<>();
+    private AbstractCalculusAlgorithm selectedAlgorithm;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,7 +75,7 @@ public class AlgorithmViewerActivity extends AppCompatActivity {
             super.onCreate(savedInstanceState);
         }
 
-        setContentView(R.layout.activity_algoritm_viewer);
+        setContentView(R.layout.activity_calculus_viewer);
 
         // Get references to the hmi elements
         hmiDisplayView = (ImageView) findViewById(R.id.imageView);
@@ -88,20 +83,14 @@ public class AlgorithmViewerActivity extends AppCompatActivity {
         // Add dialog to the algorithm viewer button
         findViewById(R.id.algorithmInfoButton).setOnClickListener(new AlgorithmInfoPopupHandler());
 
-        // Initialize the algoritm parts
+        // Initialize the algorithm parts
         rs = RenderScript.create(this);
-        videoCaptureProcessor = new VideoCaptureProcessor(rs);
-        algorithmList.add(new VectorEdgeDetectionAlgorithm());
-        algorithmList.add(new InterestPointDetectionAlgorithm());
-        algorithmList.add(new InterestPoint2Algorithm());
-        algorithmList.add(new ImagePyramidAlgorithm());
-        algorithmList.add(new TemporalPyramidAlgorithm());
-        algorithmList.add(new IntensityAlgorithm());
-        algorithmList.add(new BrightnessMotionAlgorithm());
-        algorithmList.add(new GradientMotionAlgorithm());
+        algorithmList.add(new GravityAlgorithm());
+
+        algorithmExecutor = Executors.newSingleThreadExecutor();
 
         // Populate HMI with supported algorithms / resolutions
-        initializeCameraResolutionSelection();
+        initializeResolutionSelection();
         initializeAlgorithmSelection();
     }
 
@@ -116,7 +105,7 @@ public class AlgorithmViewerActivity extends AppCompatActivity {
             selectedAlgorithm = algorithmList.get(0);
         }
 
-        startAlgorithm(selectedAlgorithm, new Size(352, 288));
+        startAlgorithm(selectedAlgorithm, new Size(512, 512));
     }
 
     @Override
@@ -133,18 +122,19 @@ public class AlgorithmViewerActivity extends AppCompatActivity {
 
         super.onDestroy();
 
-        videoCaptureProcessor = null;
         hmiDisplayView = null;
         rs.destroy();
         rs = null;
+
+        algorithmExecutor.shutdownNow();
     }
 
     /**
-     * Change camera resolution (called while running)
+     * Change resolution (called while running)
      *
-     * @param resolution    New desired camera resolution
+     * @param resolution    New desired resolution
      */
-    private void changeCameraResolution(Size resolution) {
+    private void changeResolution(Size resolution) {
         Log.i("[" + Thread.currentThread().getName() + "] - " + TAG, "Change resolution to: " + resolution);
 
         if(algorithmActive) {
@@ -154,11 +144,11 @@ public class AlgorithmViewerActivity extends AppCompatActivity {
     }
 
     /**
-     * Change the algoritm (called while running)
+     * Change the algorithm (called while running)
      *
      * @param algorithm    The new algorithm to run
      */
-    private void changeAlgorithm(AbstractVideoAlgorithm algorithm) {
+    private void changeAlgorithm(AbstractCalculusAlgorithm algorithm) {
         if(algorithmActive) {
             stopAlgorithm();
         }
@@ -172,14 +162,9 @@ public class AlgorithmViewerActivity extends AppCompatActivity {
      * @param algorithm            Algorithm to start
      * @param desiredResolution    Desired resolution to run at
      */
-    private void startAlgorithm(AbstractVideoAlgorithm algorithm, Size desiredResolution) {
+    private void startAlgorithm(AbstractCalculusAlgorithm algorithm, Size desiredResolution) {
 
-        videoCaptureProcessor.initialize(
-                (CameraManager) getSystemService(CAMERA_SERVICE),
-                desiredResolution
-        );
-
-        videoSize = videoCaptureProcessor.getVideoSize();
+        videoSize = desiredResolution;
 
         initializeVideoBuffers(videoSize);
 
@@ -189,21 +174,41 @@ public class AlgorithmViewerActivity extends AppCompatActivity {
 
         showAlgorithmHmi(selectedAlgorithm);
 
-        videoCaptureProcessor.startCapture(new CaptureDataHandler());
+        algorithmRunner = algorithmExecutor.submit(new Runnable() {
+            @Override
+            public void run() {
+                while (!Thread.currentThread().isInterrupted()) {
+                    cycle();
+                    Thread.yield();
+                }
+            }
+        });
+
         algorithmActive = true;
     }
 
     private void stopAlgorithm() {
         algorithmActive = false;
-        if(videoCaptureProcessor != null) {
-            videoCaptureProcessor.release();
+
+        // Stop render loop
+        algorithmRunner.cancel(true);
+
+        try {
+            algorithmExecutor.submit(new Runnable() {
+                @Override
+                public void run() {
+                }
+            }).get();
+        } catch (InterruptedException e) {
+            Log.e(TAG, "Stopping algorithm loop interrupted", e);
+        } catch (ExecutionException e) {
+            Log.e(TAG, "Stopping algorithm loop execution exception occurred", e);
         }
 
         removeAlgorithmHmi();
         selectedAlgorithm.cleanup();
 
         releaseVideoBuffers();
-        capturing = false;
     }
 
 
@@ -238,46 +243,52 @@ public class AlgorithmViewerActivity extends AppCompatActivity {
     @Override
     public boolean onTouchEvent(MotionEvent event) {
 
+        boolean consumed = false;
+
         if(algorithmActive) {
+
             int action = MotionEventCompat.getActionMasked(event);
 
-            switch (action) {
+            for(AbstractParameter parameter : selectedAlgorithm.getParameters()) {
+                if(parameter.getType() == ParameterType.TOUCH_POSITION) {
+                    TouchPositionParameter touchParameter = (TouchPositionParameter) parameter;
 
-                case (MotionEvent.ACTION_MOVE):
-                    float cx, cy;
-                    float x = event.getAxisValue(MotionEvent.AXIS_X);
-                    float y = event.getAxisValue(MotionEvent.AXIS_Y);
-                    cx = ((x / videoSize.getWidth()) * 4f) - 2f;
-                    cy = ((y / videoSize.getHeight()) * 4f) - 2f;
-
-                    // TODO: forward touch action to active algorithm
-
-                    return true;
-
-                default:
-                    return super.onTouchEvent(event);
+                    switch (action) {
+                        case (MotionEvent.ACTION_MOVE):
+                            float cx, cy;
+                            float x = event.getAxisValue(MotionEvent.AXIS_X);
+                            float y = event.getAxisValue(MotionEvent.AXIS_Y);
+                            cx = ((x / videoSize.getWidth()) * 2f) - 1f;
+                            cy = ((y / videoSize.getHeight()) * 2f) - 1f;
+                            touchParameter.moved(cx, cy);
+                            consumed = true;
+                            break;
+                        case (MotionEvent.ACTION_UP):
+                            touchParameter.released();
+                            consumed = true;
+                            break;
+                    }
+                }
             }
-        } else {
+        }
+
+        if(!consumed) {
             return super.onTouchEvent(event);
+        } else {
+            return true;
         }
     }
 
-    private class CaptureDataHandler implements VideoCaptureListener {
+    private void cycle() {
+        updateFrameRate();
 
-        @Override
-        public void receiveVideoFrame(Allocation capturedRgbBuffer) {
-
-            updateFrameRate();
-
-            if(selectedAlgorithm != null) {
-                selectedAlgorithm.process(capturedRgbBuffer, displayBuffer);
-            }
-
-            displayBuffer.copyTo(displayBitmap);
-            hmiDisplayView.postInvalidate();
-
-            capturing = true;
+        if(selectedAlgorithm != null) {
+            selectedAlgorithm.cycle(displayBuffer);
         }
+
+        displayBuffer.copyTo(displayBitmap);
+        hmiDisplayView.postInvalidate();
+
     }
 
     private void updateFrameRate() {
@@ -296,14 +307,20 @@ public class AlgorithmViewerActivity extends AppCompatActivity {
         });
     }
 
-    private void initializeCameraResolutionSelection() {
+    private void initializeResolutionSelection() {
+
+        List<Size> resolutions = new ArrayList<>();
+        resolutions.add(new Size(128, 128));
+        resolutions.add(new Size(256, 256));
+        resolutions.add(new Size(512, 512));
+        resolutions.add(new Size(1024, 1024));
+        resolutions.add(new Size(2048, 2048));
+
         Spinner spinner = (Spinner) findViewById(R.id.algorithmResolutionSpinner);
         ArrayAdapter<Size> adapter = new ArrayAdapter<>(
                 this,
                 android.R.layout.simple_spinner_item,
-                videoCaptureProcessor.getAvailableResolutions(
-                        (CameraManager) getSystemService(CAMERA_SERVICE)
-                )
+                resolutions
         );
 
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -314,9 +331,7 @@ public class AlgorithmViewerActivity extends AppCompatActivity {
                     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                         if (algorithmActive) {
                             Size newResolution = (Size) parent.getItemAtPosition(position);
-                            if (capturing) {
-                                changeCameraResolution(newResolution);
-                            }
+                            changeResolution(newResolution);
                         }
                     }
 
@@ -330,7 +345,7 @@ public class AlgorithmViewerActivity extends AppCompatActivity {
 
     private void initializeAlgorithmSelection() {
         Spinner spinner = (Spinner) findViewById(R.id.algorithmSelectionSpinner);
-        ArrayAdapter<AbstractVideoAlgorithm> adapter = new ArrayAdapter<>(
+        ArrayAdapter<AbstractCalculusAlgorithm> adapter = new ArrayAdapter<>(
                 this,
                 android.R.layout.simple_spinner_item,
                 algorithmList
@@ -343,10 +358,8 @@ public class AlgorithmViewerActivity extends AppCompatActivity {
                     @Override
                     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                         if (algorithmActive) {
-                            AbstractVideoAlgorithm newAlgorithm = (AbstractVideoAlgorithm) parent.getItemAtPosition(position);
-                            if (capturing) {
-                                changeAlgorithm(newAlgorithm);
-                            }
+                            AbstractCalculusAlgorithm newAlgorithm = (AbstractCalculusAlgorithm) parent.getItemAtPosition(position);
+                            changeAlgorithm(newAlgorithm);
                         }
                     }
 
@@ -495,7 +508,7 @@ public class AlgorithmViewerActivity extends AppCompatActivity {
         @Override
         public void onClick(View v) {
             if(selectedAlgorithm != null) {
-                new AlertDialog.Builder(AlgorithmViewerActivity.this)
+                new AlertDialog.Builder(CalculusViewerActivity.this)
                         .setTitle(selectedAlgorithm.getName())
                         .setMessage(selectedAlgorithm.getDescription())
                         .show();

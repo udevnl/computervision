@@ -1,4 +1,4 @@
-package nl.udev.hellorenderscript.video.algoritms.common;
+package nl.udev.hellorenderscript.common.algoritm.parts;
 
 import android.util.Log;
 

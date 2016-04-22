@@ -7,5 +7,6 @@ package nl.udev.hellorenderscript.common.algoritm.parameter;
  */
 public enum ParameterType {
     INTEGER,
-    LIMITED_SETTINGS
+    LIMITED_SETTINGS,
+    TOUCH_POSITION
 }

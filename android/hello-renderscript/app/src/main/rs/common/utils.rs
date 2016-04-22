@@ -8,6 +8,21 @@ uchar4 __attribute__((kernel)) clearUchar4(uint32_t x, uint32_t y) {
     return 0;
 }
 
+uchar4 __attribute__((kernel)) fadeUchar4(uchar4 in, uint32_t x, uint32_t y) {
+
+    if(in.r > 0) in.r--;
+    if(in.g > 0) in.g--;
+    if(in.b > 0) in.b--;
+    if(in.a > 0) in.a--;
+
+    return in;
+}
+
+
+float2 __attribute__((kernel)) clearFloat2(uint32_t x, uint32_t y) {
+    return 0;
+}
+
 // ------------------------------------------------------------------------------------------------
 // Convert uchar RBG to float intensity (0.0 - 1.0)
 // ------------------------------------------------------------------------------------------------

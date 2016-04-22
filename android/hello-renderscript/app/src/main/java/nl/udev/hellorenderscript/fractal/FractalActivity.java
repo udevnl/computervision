@@ -18,7 +18,7 @@ import android.widget.ImageView;
 
 import nl.udev.hellorenderscript.R;
 import nl.udev.hellorenderscript.ScriptC_julia;
-import nl.udev.hellorenderscript.video.algoritms.common.Plotting;
+import nl.udev.hellorenderscript.common.algoritm.parts.Plotting;
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.

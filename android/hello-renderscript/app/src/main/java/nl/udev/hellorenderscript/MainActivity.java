@@ -13,6 +13,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 
+import nl.udev.hellorenderscript.calculus.CalculusViewerActivity;
 import nl.udev.hellorenderscript.fractal.FractalActivity;
 import nl.udev.hellorenderscript.video.AlgorithmViewerActivity;
 import nl.udev.hellorenderscript.video.VideoActivity;
@@ -45,13 +46,18 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void startAlgorithmViewer(View view) {
+    public void startVideoAlgorithmViewer(View view) {
         if (checkCameraPermissions()) {
             Intent intent = new Intent(this, AlgorithmViewerActivity.class);
             startActivity(intent);
         } else {
             requestCameraPermissions();
         }
+    }
+
+    public void startCalculusAlgorithmViewer(View view) {
+        Intent intent = new Intent(this, CalculusViewerActivity.class);
+        startActivity(intent);
     }
 
     //region Permissions

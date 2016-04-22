@@ -1,4 +1,4 @@
-package nl.udev.hellorenderscript.video.algoritms.common;
+package nl.udev.hellorenderscript.common.algoritm.parts;
 
 import android.renderscript.Allocation;
 import android.renderscript.Element;
@@ -10,7 +10,7 @@ import java.util.List;
 
 import nl.udev.hellorenderscript.video.ScriptC_tpyramid;
 
-import static nl.udev.hellorenderscript.video.algoritms.common.RsUtils.create2d;
+import static nl.udev.hellorenderscript.common.algoritm.parts.RsUtils.create2d;
 
 /**
  * A special kind of pyramid for temporal image processing.

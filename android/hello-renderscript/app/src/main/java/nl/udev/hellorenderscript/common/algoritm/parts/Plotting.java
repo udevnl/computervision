@@ -1,8 +1,9 @@
-package nl.udev.hellorenderscript.video.algoritms.common;
+package nl.udev.hellorenderscript.common.algoritm.parts;
 
 import android.renderscript.Allocation;
 import android.renderscript.Element;
 import android.renderscript.RenderScript;
+import android.renderscript.Short4;
 
 import nl.udev.hellorenderscript.video.ScriptC_plotting;
 
@@ -97,6 +98,10 @@ public class Plotting {
      */
     public void plotColormapNormalizedFloat(Allocation normalizedFloatBuffer, Allocation outBufferRgba) {
         rsPlot.forEach_plotNormalizedFloat8BitColormap(normalizedFloatBuffer, outBufferRgba);
+    }
+
+    public void plot(Allocation points, int pointCount, Short4 color, Allocation image, int width, int height) {
+        rsPlot.invoke_plotDots(points, pointCount, color, image, width, height);
     }
 
     public static ColorMap createDefaultAngularColorMap() {
