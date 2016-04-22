@@ -7,21 +7,21 @@ import nl.udev.hellorenderscript.common.algoritm.AbstractAlgorithm;
 import nl.udev.hellorenderscript.common.algoritm.parameter.IntegerParameter;
 import nl.udev.hellorenderscript.common.algoritm.parameter.LimitedSettingsParameter;
 import nl.udev.hellorenderscript.common.algoritm.parameter.ParameterUser;
-import nl.udev.hellorenderscript.video.ScriptC_interestpoint;
+import nl.udev.hellorenderscript.video.ScriptC_interest2;
 import nl.udev.hellorenderscript.video.ScriptC_utils;
 import nl.udev.hellorenderscript.video.algoritms.common.EdgeDetection;
 import nl.udev.hellorenderscript.video.algoritms.common.Plotting;
 
 /**
- * Algorithm to show and detect interest points in an image using another custom algorithm.
+ * Another attempt at detecting interest points.
  *
- * See interestpoint.rs for the algorithm.
+ * See interest2.rs for the algorithm.
  *
- * Created by ben on 9-2-16.
+ * Created by ben on 9-4-16.
  */
-public class InterestPointDetectionAlgorithm extends AbstractAlgorithm {
+public class InterestPoint2Algorithm extends AbstractAlgorithm {
 
-    private ScriptC_interestpoint rsInterestPoint;
+    private ScriptC_interest2 rsInterestPoint;
     private ScriptC_utils rsUtils;
 
     private Plotting plotting;
@@ -31,12 +31,11 @@ public class InterestPointDetectionAlgorithm extends AbstractAlgorithm {
     private Allocation polarBuffer1;
 
     private int kernelSize;
-    private int interestAreaSize;
+    private int areaSize;
+    private float start;
+    private float end;
+    private float minLength;
     private float amplification;
-    private float minEdgeSize;
-    private float binSizeRadians;
-    private float maxWeightOutOfBinFactor;
-    private float maxAngleBetweenBinsRadians;
     private ViewType viewType;
 
     enum ViewType {
@@ -44,22 +43,20 @@ public class InterestPointDetectionAlgorithm extends AbstractAlgorithm {
         ViewSourceOverlay
     }
 
-    public InterestPointDetectionAlgorithm() {
+    public InterestPoint2Algorithm() {
         addParameter(new IntegerParameter("Edge kernel", 1, 10, 1, new KernelSizeMonitor()));
         addParameter(new IntegerParameter("Edge amp", 1, 100, 1, new AmplificationMonitor()));
-        addParameter(new IntegerParameter("InterestAreaSize", 1, 10, 5, new InterestAreaSizeMonitor()));
-        addParameter(new IntegerParameter("MinEdgeSize", 10, 100, 20, new MinEdgeSizeMonitor()));
-        addParameter(new IntegerParameter("BinSize", 5, 180, 150, new BinSizeMonitor()));
-        addParameter(new IntegerParameter("MaxNonBinFactor", 1, 100, 10, new MaxOutsideBinFactorMonitor()));
-        addParameter(new IntegerParameter("MaxBinsAngle", 0, 360, 120, new MaxBinsAngleMonitor()));
+        addParameter(new IntegerParameter("AreaSize", 1, 8, 1, new AreaSizeMonitor()));
+        addParameter(new IntegerParameter("Start", 0, 100, 40, new StartMonitor()));
+        addParameter(new IntegerParameter("End", 0, 100, 60, new EndMonitor()));
+        addParameter(new IntegerParameter("MinLength", 0, 100, 0, new MinLengthMonitor()));
         addParameter(new LimitedSettingsParameter<>("Viewtype", ViewType.values(), ViewType.ViewEdgesOverlay, new ViewTypeMonitor()));
         this.kernelSize = 5;
         this.amplification = 7.0f;
-        this.interestAreaSize = 1;
-        this.minEdgeSize = 0.5f;
-        this.maxWeightOutOfBinFactor = 0.1f;
-        this.binSizeRadians = (float) Math.toRadians(27);
-        this.maxAngleBetweenBinsRadians = (float) Math.toRadians(120);
+        this.areaSize = 1;
+        this.start = 0.4f;
+        this.end = 0.6f;
+        this.minLength = 0;
         this.viewType = ViewType.ViewEdgesOverlay;
     }
 
@@ -75,12 +72,12 @@ public class InterestPointDetectionAlgorithm extends AbstractAlgorithm {
         Allocation edgePolarVectors = edgeDetection.calcEdgePolarVectors(intensityBuffer);
 
         // Calculate the amount of edge in a certain area
-        rsInterestPoint.set_areaSize(interestAreaSize);
-        rsInterestPoint.set_polarEdgeBuffer(edgePolarVectors);
-        rsInterestPoint.set_binSizeRadians(binSizeRadians);
-        rsInterestPoint.set_minEdgeSize(minEdgeSize);
-        rsInterestPoint.set_maxOutOfBinsFactor(maxWeightOutOfBinFactor);
-        rsInterestPoint.set_maxAngleBetweenBinsRadians(maxAngleBetweenBinsRadians);
+        rsInterestPoint.set_minLength(minLength);
+        rsInterestPoint.set_areaSize(areaSize);
+        rsInterestPoint.set_startFraction(start);
+        rsInterestPoint.set_endFraction(end);
+        rsInterestPoint.set_sourcePolarEdgeVectorBuffer(edgePolarVectors);
+        rsInterestPoint.set_sourceEdgeVectorBuffer(edgeDetection.getEdgeVectorsBuffer());
         rsInterestPoint.forEach_calcInterestPoints(edgePolarVectors, polarBuffer1);
 
         // Plot the interest points
@@ -99,7 +96,7 @@ public class InterestPointDetectionAlgorithm extends AbstractAlgorithm {
 
     @Override
     protected String getName() {
-        return "InterestPoint detection";
+        return "IntPtDet v2";
     }
 
     @Override
@@ -110,7 +107,7 @@ public class InterestPointDetectionAlgorithm extends AbstractAlgorithm {
 
         // Create scriptlets
         rsUtils = new ScriptC_utils(getRenderScript());
-        rsInterestPoint = new ScriptC_interestpoint(getRenderScript());
+        rsInterestPoint = new ScriptC_interest2(getRenderScript());
         rsInterestPoint.set_sourceWidth(getVideoResolution().getWidth());
         rsInterestPoint.set_sourceHeight(getVideoResolution().getHeight());
 
@@ -167,71 +164,6 @@ public class InterestPointDetectionAlgorithm extends AbstractAlgorithm {
         }
     }
 
-    private class InterestAreaSizeMonitor implements ParameterUser<Integer> {
-
-        @Override
-        public String displayValue(Integer value) {
-            return interestAreaSize + "x" + interestAreaSize;
-        }
-
-        @Override
-        public void handleValueChanged(Integer newValue) {
-            interestAreaSize = newValue;
-        }
-    }
-
-    private class MinEdgeSizeMonitor implements ParameterUser<Integer> {
-
-        @Override
-        public String displayValue(Integer value) {
-            return String.format("%1.2f", minEdgeSize);
-        }
-
-        @Override
-        public void handleValueChanged(Integer newValue) {
-            minEdgeSize = (float) newValue / 100.0f;
-        }
-    }
-
-    private class BinSizeMonitor implements ParameterUser<Integer> {
-
-        @Override
-        public String displayValue(Integer value) {
-            return String.format("%3.1f deg", Math.toDegrees(binSizeRadians));
-        }
-
-        @Override
-        public void handleValueChanged(Integer newValue) {
-            binSizeRadians = (float)Math.toRadians(newValue);
-        }
-    }
-
-    private class MaxOutsideBinFactorMonitor implements ParameterUser<Integer> {
-
-        @Override
-        public String displayValue(Integer value) {
-            return String.format("%1.1f", maxWeightOutOfBinFactor);
-        }
-
-        @Override
-        public void handleValueChanged(Integer newValue) {
-            maxWeightOutOfBinFactor = (float) newValue / 100.0f;
-        }
-    }
-
-    private class MaxBinsAngleMonitor implements ParameterUser<Integer> {
-
-        @Override
-        public String displayValue(Integer value) {
-            return String.format("%3.1f deg", Math.toDegrees(maxAngleBetweenBinsRadians));
-        }
-
-        @Override
-        public void handleValueChanged(Integer newValue) {
-            maxAngleBetweenBinsRadians = (float)Math.toRadians(newValue);
-        }
-    }
-
     private class ViewTypeMonitor implements ParameterUser<ViewType> {
 
         @Override
@@ -242,6 +174,58 @@ public class InterestPointDetectionAlgorithm extends AbstractAlgorithm {
         @Override
         public void handleValueChanged(ViewType newValue) {
             viewType = newValue;
+        }
+    }
+
+    private class StartMonitor implements ParameterUser<Integer> {
+
+        @Override
+        public String displayValue(Integer value) {
+            return String.format("%3.0f", start * 100.0f);
+        }
+
+        @Override
+        public void handleValueChanged(Integer newValue) {
+            start = newValue / 100.0f;
+        }
+    }
+
+    private class EndMonitor implements ParameterUser<Integer> {
+
+        @Override
+        public String displayValue(Integer value) {
+            return String.format("%3.0f", end * 100.0f);
+        }
+
+        @Override
+        public void handleValueChanged(Integer newValue) {
+            end = newValue / 100.0f;
+        }
+    }
+
+    private class AreaSizeMonitor implements ParameterUser<Integer> {
+
+        @Override
+        public String displayValue(Integer value) {
+            return String.format("%dx%d", areaSize * 2 + 1, areaSize * 2 + 1);
+        }
+
+        @Override
+        public void handleValueChanged(Integer newValue) {
+            areaSize = newValue;
+        }
+    }
+
+    private class MinLengthMonitor implements ParameterUser<Integer> {
+
+        @Override
+        public String displayValue(Integer value) {
+            return String.format("%8.2f", minLength);
+        }
+
+        @Override
+        public void handleValueChanged(Integer newValue) {
+            minLength = (float)(Math.pow(1.05, newValue) - 1);
         }
     }
 }

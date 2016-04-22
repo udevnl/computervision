@@ -83,10 +83,12 @@ public class AlgorithmViewerActivity extends AppCompatActivity {
         videoCaptureProcessor = new VideoCaptureProcessor(rs);
         algorithmList.add(new VectorEdgeDetectionAlgorithm());
         algorithmList.add(new InterestPointDetectionAlgorithm());
+        algorithmList.add(new InterestPoint2Algorithm());
         algorithmList.add(new ImagePyramidAlgorithm());
         algorithmList.add(new TemporalPyramidAlgorithm());
         algorithmList.add(new IntensityAlgorithm());
         algorithmList.add(new BrightnessMotionAlgorithm());
+        algorithmList.add(new GradientMotionAlgorithm());
 
         // Populate HMI with supported algorithms / resolutions
         initializeCameraResolutionSelection();

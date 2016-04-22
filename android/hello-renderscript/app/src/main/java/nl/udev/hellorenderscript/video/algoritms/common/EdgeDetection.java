@@ -155,6 +155,13 @@ public class EdgeDetection {
         return edgePolarVectorsBuffer;
     }
 
+    /**
+     * @return  the intermediate edge vectors buffer containing the (x, y) edge vectors
+     */
+    public Allocation getEdgeVectorsBuffer() {
+        return edgeVectorsBuffer;
+    }
+
     public enum KernelMode {
         KernelVector2D,
         KernelVector2dSeparable2N

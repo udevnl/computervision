@@ -4,7 +4,7 @@
 int sourceWidth;
 int sourceHeight;
 
-// Only try to find those points where there is are corner
+// Only try to find those points where there is a corner
 // This means look for the occurance of maximum two angles
 //
 // The input is a 2D vector where:
@@ -45,6 +45,9 @@ float2 __attribute__((kernel)) calcInterestPoints(float2 in, int32_t x, int32_t 
             for(int px = -areaSize; px <= areaSize; px++) {
                 xp = x + px;
                 edgeVector = rsGetElementAt_float2(polarEdgeBuffer, xp, yp);
+
+                // Normalize the angle in the edge vector between 0..PI
+                edgeVector.s0 = fmod(edgeVector.s0 + M_PI, M_PI);
 
                 if(edgeVector.s1 > minEdgeSize) {
                     // Try to match the vector to a bin
@@ -106,11 +109,17 @@ float2 __attribute__((kernel)) calcInterestPoints(float2 in, int32_t x, int32_t 
     return resultVector;
 }
 
-rs_allocation plotImageBuffer;
-void __attribute__((kernel)) plotInterestPoints(float2 in, int32_t x, int32_t y) {
+rs_allocation overlaySourceBuffer;
+uchar4 __attribute__((kernel)) plotInterestPoints(float2 in, int32_t x, int32_t y) {
+    uchar4 pixel = rsGetElementAt_uchar4(overlaySourceBuffer, x, y);
+
+    // Dim
+    pixel /= 2;
+
     if(in.s0 > 0) {
-        uchar4 markColor = 255;
-        rsSetElementAt_uchar4(plotImageBuffer, markColor, x, y);
+        pixel = 255;
     }
+
+    return pixel;
 }
 
