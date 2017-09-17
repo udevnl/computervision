@@ -33,6 +33,7 @@ import nl.udev.hellorenderscript.common.algoritm.parameter.AbstractParameter;
 import nl.udev.hellorenderscript.common.algoritm.parameter.IntegerParameter;
 import nl.udev.hellorenderscript.common.algoritm.parameter.LimitedSettingsParameter;
 import nl.udev.hellorenderscript.video.algoritms.BrightnessMotionAlgorithm;
+import nl.udev.hellorenderscript.video.algoritms.CannyAlgorithm;
 import nl.udev.hellorenderscript.video.algoritms.GradientMotionAlgorithm;
 import nl.udev.hellorenderscript.video.algoritms.ImagePyramidAlgorithm;
 import nl.udev.hellorenderscript.video.algoritms.IntensityAlgorithm;
@@ -99,6 +100,7 @@ public class AlgorithmViewerActivity extends AppCompatActivity {
         algorithmList.add(new IntensityAlgorithm());
         algorithmList.add(new BrightnessMotionAlgorithm());
         algorithmList.add(new GradientMotionAlgorithm());
+        algorithmList.add(new CannyAlgorithm());
 
         // Populate HMI with supported algorithms / resolutions
         initializeCameraResolutionSelection();
